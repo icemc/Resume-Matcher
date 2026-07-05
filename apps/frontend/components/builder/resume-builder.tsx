@@ -46,14 +46,16 @@ import { useRegenerateWizard } from '@/hooks/use-regenerate-wizard';
 import { useTranslations } from '@/lib/i18n';
 import { type TemplateSettings, DEFAULT_TEMPLATE_SETTINGS } from '@/lib/types/template-settings';
 import { withLocalizedDefaultSections } from '@/lib/utils/section-helpers';
-import { useLanguage } from '@/lib/context/language-context';
+import { useTenant } from '@/lib/context/tenant-context';
+import { tenantPath } from '@/lib/utils/tenant-paths';
+import { tenantStorageKey } from '@/lib/utils/tenant-storage-key';
 import { buildResumeFilename, downloadBlobAsFile, openUrlInNewTab } from '@/lib/utils/download';
 import type { RegenerateItemInput } from '@/lib/api/enrichment';
 
 type TabId = 'resume' | 'cover-letter' | 'outreach' | 'jd-match';
 
-const STORAGE_KEY = 'resume_builder_draft';
-const SETTINGS_STORAGE_KEY = 'resume_builder_settings';
+const BASE_STORAGE_KEY = 'resume_builder_draft';
+const BASE_SETTINGS_STORAGE_KEY = 'resume_builder_settings';
 
 type Translate = (key: string, params?: Record<string, string | number>) => string;
 
@@ -82,7 +84,9 @@ const buildInitialData = (t: Translate): ResumeData => ({
 
 const ResumeBuilderContent = () => {
   const { t } = useTranslations();
-  const { uiLanguage, contentLanguage } = useLanguage();
+  const tenant = useTenant();
+  const storageKey = tenantStorageKey(tenant, BASE_STORAGE_KEY);
+  const settingsStorageKey = tenantStorageKey(tenant, BASE_SETTINGS_STORAGE_KEY);
   const [notificationDialog, setNotificationDialog] = useState<{
     title: string;
     description: string;
@@ -126,13 +130,13 @@ const ResumeBuilderContent = () => {
     if (resumeId || hasUnsavedChanges || improvedPreview) {
       return;
     }
-    const savedDraft = localStorage.getItem(STORAGE_KEY);
+    const savedDraft = localStorage.getItem(storageKey);
     if (savedDraft) {
       return;
     }
     setResumeData(initialData);
     setLastSavedData(initialData);
-  }, [initialData, resumeId, hasUnsavedChanges, improvedPreview]);
+  }, [initialData, resumeId, hasUnsavedChanges, improvedPreview, storageKey]);
 
   // Tab state
   const [activeTab, setActiveTab] = useState<TabId>('resume');
@@ -159,7 +163,7 @@ const ResumeBuilderContent = () => {
   // AI Regenerate wizard
   const regenerateWizard = useRegenerateWizard({
     resumeId: resumeId || '',
-    outputLanguage: contentLanguage,
+    outputLanguage: tenant,
     onSuccess: async () => {
       // Reload resume data after applying changes
       if (!resumeId) {
@@ -167,7 +171,7 @@ const ResumeBuilderContent = () => {
       }
 
       try {
-        const data = await fetchResume(resumeId);
+        const data = await fetchResume(tenant, resumeId);
         // Update resume title for downloads
         setResumeTitle(data.title ?? null);
         if (data.processed_resume) {
@@ -244,7 +248,7 @@ const ResumeBuilderContent = () => {
 
   // Load template settings from localStorage on mount
   useEffect(() => {
-    const savedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
+    const savedSettings = localStorage.getItem(settingsStorageKey);
     if (savedSettings) {
       try {
         const parsed = JSON.parse(savedSettings);
@@ -259,12 +263,12 @@ const ResumeBuilderContent = () => {
         // Use defaults
       }
     }
-  }, []);
+  }, [settingsStorageKey]);
 
   // Save template settings to localStorage when they change
   useEffect(() => {
-    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(templateSettings));
-  }, [templateSettings]);
+    localStorage.setItem(settingsStorageKey, JSON.stringify(templateSettings));
+  }, [templateSettings, settingsStorageKey]);
 
   // Warn user before leaving with unsaved changes
   useEffect(() => {
@@ -285,7 +289,7 @@ const ResumeBuilderContent = () => {
       // Priority 1: Fetch from API if ID is in URL (most reliable)
       if (resumeId) {
         try {
-          const data = await fetchResume(resumeId);
+          const data = await fetchResume(tenant, resumeId);
           // Track if this is a tailored resume (has parent_id)
           setIsTailoredResume(Boolean(data.parent_id));
           // Store resume title for downloads
@@ -333,13 +337,13 @@ const ResumeBuilderContent = () => {
           setOutreachMessage(improvedOutreach);
         }
         // Persist to localStorage as backup
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(improvedPreview));
+        localStorage.setItem(storageKey, JSON.stringify(improvedPreview));
         setLoadingState('loaded');
         return;
       }
 
       // Priority 3: Restore from localStorage (browser refresh recovery)
-      const savedDraft = localStorage.getItem(STORAGE_KEY);
+      const savedDraft = localStorage.getItem(storageKey);
       if (savedDraft) {
         try {
           const parsed = JSON.parse(savedDraft);
@@ -349,7 +353,7 @@ const ResumeBuilderContent = () => {
           setLoadingState('loaded');
           return;
         } catch {
-          localStorage.removeItem(STORAGE_KEY);
+          localStorage.removeItem(storageKey);
         }
       }
 
@@ -358,7 +362,7 @@ const ResumeBuilderContent = () => {
     };
 
     loadResumeData();
-  }, [improvedPreview, improvedCoverLetter, improvedOutreach, resumeId]);
+  }, [improvedPreview, improvedCoverLetter, improvedOutreach, resumeId, tenant, storageKey]);
 
   // Fetch job description when we have a tailored resume
   useEffect(() => {
@@ -390,12 +394,15 @@ const ResumeBuilderContent = () => {
     };
   }, [isTailoredResume, resumeId]);
 
-  const handleUpdate = useCallback((newData: ResumeData) => {
-    setResumeData(newData);
-    setHasUnsavedChanges(true);
-    // Auto-save draft to localStorage
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newData));
-  }, []);
+  const handleUpdate = useCallback(
+    (newData: ResumeData) => {
+      setResumeData(newData);
+      setHasUnsavedChanges(true);
+      // Auto-save draft to localStorage
+      localStorage.setItem(storageKey, JSON.stringify(newData));
+    },
+    [storageKey]
+  );
 
   const handleSettingsChange = useCallback((newSettings: TemplateSettings) => {
     setTemplateSettings(newSettings);
@@ -413,7 +420,7 @@ const ResumeBuilderContent = () => {
       setResumeData(nextData);
       setLastSavedData(nextData);
       setHasUnsavedChanges(false);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(nextData));
+      localStorage.setItem(storageKey, JSON.stringify(nextData));
     } catch (error) {
       console.error('Failed to save resume:', error);
       showNotification(t('builder.alerts.saveFailed'), 'danger');
@@ -425,7 +432,7 @@ const ResumeBuilderContent = () => {
   const handleReset = () => {
     setResumeData(lastSavedData);
     setHasUnsavedChanges(false);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(lastSavedData));
+    localStorage.setItem(storageKey, JSON.stringify(lastSavedData));
   };
 
   const getCompanyFromTitle = (title: string | null | undefined): string | null => {
@@ -441,7 +448,7 @@ const ResumeBuilderContent = () => {
     }
     try {
       setIsDownloading(true);
-      const blob = await downloadResumePdf(resumeId, templateSettings, uiLanguage);
+      const blob = await downloadResumePdf(resumeId, templateSettings, tenant);
       const company = getCompanyFromTitle(resumeTitle);
       const userName = resumeData.personalInfo?.name?.trim() || null;
       const filename = buildResumeFilename(userName, company, resumeId, 'resume');
@@ -450,7 +457,7 @@ const ResumeBuilderContent = () => {
     } catch (error) {
       console.error('Failed to download resume:', error);
       if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-        const fallbackUrl = getResumePdfUrl(resumeId, templateSettings, uiLanguage);
+        const fallbackUrl = getResumePdfUrl(resumeId, templateSettings, tenant);
         const didOpen = openUrlInNewTab(fallbackUrl);
         if (!didOpen) {
           showNotification(t('common.popupBlocked', { url: fallbackUrl }), 'warning');
@@ -493,7 +500,7 @@ const ResumeBuilderContent = () => {
     }
     try {
       setIsDownloading(true);
-      const blob = await downloadCoverLetterPdf(resumeId, templateSettings.pageSize, uiLanguage);
+      const blob = await downloadCoverLetterPdf(resumeId, templateSettings.pageSize, tenant);
       const company = getCompanyFromTitle(resumeTitle);
       const userName = resumeData.personalInfo?.name?.trim() || null;
       const filename = buildResumeFilename(userName, company, resumeId, 'cover-letter');
@@ -501,7 +508,7 @@ const ResumeBuilderContent = () => {
     } catch (error) {
       console.error('Failed to download cover letter:', error);
       if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-        const fallbackUrl = getCoverLetterPdfUrl(resumeId, templateSettings.pageSize, uiLanguage);
+        const fallbackUrl = getCoverLetterPdfUrl(resumeId, templateSettings.pageSize, tenant);
         const didOpen = openUrlInNewTab(fallbackUrl);
         if (!didOpen) {
           showNotification(t('common.popupBlocked', { url: fallbackUrl }), 'warning');
@@ -613,7 +620,7 @@ const ResumeBuilderContent = () => {
             <div>
               <Button
                 variant="link"
-                onClick={() => router.push('/dashboard')}
+                onClick={() => router.push(tenantPath(tenant, '/dashboard'))}
                 className="mb-2 -ml-1"
               >
                 <ArrowLeft className="w-4 h-4" />
