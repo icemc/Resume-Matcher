@@ -47,6 +47,11 @@
     "goToSettings": "Ir para Configurações",
     "applicationTracker": "Acompanhamento de candidaturas"
   },
+  "tenantSwitcher": {
+    "label": "Idioma",
+    "configured": "Configurado",
+    "setUp": "Ainda não configurado"
+  },
   "dashboard": {
     "title": "Painel",
     "subtitle": "Gerencie seus currículos e candidaturas",
@@ -592,8 +597,6 @@
     "apiKey": "Chave de API",
     "apiKeyPlaceholder": "Insira sua chave de API",
     "saveApiKey": "Salvar Chave de API",
-    "contentLanguage": "Idioma do Conteúdo",
-    "contentLanguageDescription": "Idioma para conteúdo gerado (currículos, cartas de apresentação)",
     "uiLanguage": "Idioma da Interface",
     "uiLanguageDescription": "Idioma da interface do usuário",
     "theme": "Tema",

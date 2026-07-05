@@ -390,6 +390,8 @@ class ResumeFetchData(BaseModel):
     outreach_message: str | None = None
     parent_id: str | None = None  # For determining if resume is tailored
     title: str | None = None
+    language: str = "en"
+    is_master: bool = False
 
 
 class ResumeFetchResponse(BaseModel):
@@ -410,6 +412,7 @@ class ResumeSummary(BaseModel):
     created_at: str
     updated_at: str
     title: str | None = None
+    language: str = "en"
 
 
 class ResumeListResponse(BaseModel):
@@ -419,11 +422,18 @@ class ResumeListResponse(BaseModel):
     data: list[ResumeSummary]
 
 
+class ConfiguredLanguagesResponse(BaseModel):
+    """Response listing tenants (languages) with at least one resume."""
+
+    languages: list[str]
+
+
 # Job Description Models
 class JobUploadRequest(BaseModel):
     """Request to upload job descriptions."""
 
     job_descriptions: list[str]
+    language: str
     resume_id: str | None = None
 
 
