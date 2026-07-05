@@ -50,6 +50,12 @@ async def lifespan(app: FastAPI):
     result = await migrate_tinydb()
     if result.get("status") == "migrated":
         logger.info("Startup data migration: %s", result)
+    # Add the language tenant column (+ backfill + index swap) if missing.
+    from app.scripts.migrate_add_language_column import migrate as migrate_language_column
+
+    language_result = await migrate_language_column()
+    if language_result.get("status") == "migrated":
+        logger.info("Startup language-column migration: %s", language_result)
     # Fold any legacy plaintext API keys into the encrypted store (idempotent,
     # non-clobbering), then strip them from config.json.
     from app.config import migrate_legacy_keys

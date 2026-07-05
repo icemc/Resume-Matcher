@@ -20,23 +20,30 @@ async def db(tmp_path):
 
 class TestResumeCrud:
     async def test_create_and_get(self, db):
-        created = await db.create_resume(content="# Resume", filename="r.pdf")
+        created = await db.create_resume(content="# Resume", language="en", filename="r.pdf")
         assert created["resume_id"]
         fetched = await db.get_resume(created["resume_id"])
         assert fetched is not None
         assert fetched["content"] == "# Resume"
         assert fetched["filename"] == "r.pdf"
+        assert fetched["language"] == "en"
 
     async def test_get_missing_returns_none(self, db):
         assert await db.get_resume("does-not-exist") is None
 
     async def test_list_resumes(self, db):
-        await db.create_resume(content="a")
-        await db.create_resume(content="b")
-        assert len(await db.list_resumes()) == 2
+        await db.create_resume(content="a", language="en")
+        await db.create_resume(content="b", language="en")
+        assert len(await db.list_resumes(language="en")) == 2
+
+    async def test_list_resumes_scoped_to_tenant(self, db):
+        await db.create_resume(content="a", language="en")
+        await db.create_resume(content="b", language="fr")
+        assert len(await db.list_resumes(language="en")) == 1
+        assert len(await db.list_resumes(language="fr")) == 1
 
     async def test_update_resume_changes_field_and_timestamp(self, db):
-        created = await db.create_resume(content="x")
+        created = await db.create_resume(content="x", language="en")
         updated = await db.update_resume(created["resume_id"], {"title": "New Title"})
         assert updated["title"] == "New Title"
         assert updated["updated_at"] >= created["updated_at"]
@@ -46,7 +53,7 @@ class TestResumeCrud:
             await db.update_resume("missing", {"title": "X"})
 
     async def test_delete_resume(self, db):
-        created = await db.create_resume(content="x")
+        created = await db.create_resume(content="x", language="en")
         assert await db.delete_resume(created["resume_id"]) is True
         assert await db.get_resume(created["resume_id"]) is None
 
@@ -55,54 +62,79 @@ class TestResumeCrud:
 
     async def test_original_markdown_absence_semantics(self, db):
         # Omitted when None (preserve TinyDB behavior); present when supplied.
-        without = await db.create_resume(content="x")
+        without = await db.create_resume(content="x", language="en")
         assert "original_markdown" not in without
-        with_md = await db.create_resume(content="x", original_markdown="# raw")
+        with_md = await db.create_resume(content="x", language="en", original_markdown="# raw")
         fetched = await db.get_resume(with_md["resume_id"])
         assert fetched["original_markdown"] == "# raw"
 
 
 class TestMasterResume:
     async def test_no_master_initially(self, db):
-        assert await db.get_master_resume() is None
+        assert await db.get_master_resume(language="en") is None
 
     async def test_set_master_unsets_previous(self, db):
-        r1 = await db.create_resume(content="1")
-        r2 = await db.create_resume(content="2")
+        r1 = await db.create_resume(content="1", language="en")
+        r2 = await db.create_resume(content="2", language="en")
 
-        assert await db.set_master_resume(r1["resume_id"]) is True
-        assert (await db.get_master_resume())["resume_id"] == r1["resume_id"]
+        assert await db.set_master_resume(r1["resume_id"], language="en") is True
+        assert (await db.get_master_resume(language="en"))["resume_id"] == r1["resume_id"]
 
-        assert await db.set_master_resume(r2["resume_id"]) is True
-        master = await db.get_master_resume()
+        assert await db.set_master_resume(r2["resume_id"], language="en") is True
+        master = await db.get_master_resume(language="en")
         assert master["resume_id"] == r2["resume_id"]
         # Only one master at a time.
-        assert sum(1 for r in await db.list_resumes() if r["is_master"]) == 1
+        assert sum(1 for r in await db.list_resumes(language="en") if r["is_master"]) == 1
 
     async def test_set_master_missing_returns_false(self, db):
-        assert await db.set_master_resume("missing") is False
+        assert await db.set_master_resume("missing", language="en") is False
+
+    async def test_set_master_wrong_tenant_returns_false(self, db):
+        r1 = await db.create_resume(content="1", language="en")
+        assert await db.set_master_resume(r1["resume_id"], language="fr") is False
 
     async def test_atomic_first_upload_becomes_master(self, db):
-        created = await db.create_resume_atomic_master(content="first", processing_status="ready")
+        created = await db.create_resume_atomic_master(
+            content="first", language="en", processing_status="ready"
+        )
         assert created["is_master"] is True
 
     async def test_atomic_second_upload_not_master(self, db):
-        await db.create_resume_atomic_master(content="first", processing_status="ready")
-        second = await db.create_resume_atomic_master(content="second", processing_status="ready")
+        await db.create_resume_atomic_master(content="first", language="en", processing_status="ready")
+        second = await db.create_resume_atomic_master(
+            content="second", language="en", processing_status="ready"
+        )
         assert second["is_master"] is False
 
     async def test_atomic_recovers_when_master_stuck(self, db):
         # Master stuck in "failed" → next upload is promoted to master.
-        first = await db.create_resume_atomic_master(content="first", processing_status="failed")
+        first = await db.create_resume_atomic_master(
+            content="first", language="en", processing_status="failed"
+        )
         assert first["is_master"] is True
-        second = await db.create_resume_atomic_master(content="second", processing_status="ready")
+        second = await db.create_resume_atomic_master(
+            content="second", language="en", processing_status="ready"
+        )
         assert second["is_master"] is True
-        assert (await db.get_master_resume())["resume_id"] == second["resume_id"]
+        assert (await db.get_master_resume(language="en"))["resume_id"] == second["resume_id"]
+
+    async def test_atomic_master_per_tenant_independent(self, db):
+        # Each tenant (language) gets its own master; no cross-tenant clash.
+        en_first = await db.create_resume_atomic_master(
+            content="en first", language="en", processing_status="ready"
+        )
+        fr_first = await db.create_resume_atomic_master(
+            content="fr first", language="fr", processing_status="ready"
+        )
+        assert en_first["is_master"] is True
+        assert fr_first["is_master"] is True
+        assert (await db.get_master_resume(language="en"))["resume_id"] == en_first["resume_id"]
+        assert (await db.get_master_resume(language="fr"))["resume_id"] == fr_first["resume_id"]
 
 
 class TestJobs:
     async def test_create_and_get_job(self, db):
-        created = await db.create_job(content="Engineer role", resume_id="r1")
+        created = await db.create_job(content="Engineer role", language="en", resume_id="r1")
         fetched = await db.get_job(created["job_id"])
         assert fetched["content"] == "Engineer role"
         assert fetched["resume_id"] == "r1"
@@ -111,7 +143,7 @@ class TestJobs:
         assert await db.get_job("missing") is None
 
     async def test_update_job(self, db):
-        created = await db.create_job(content="old")
+        created = await db.create_job(content="old", language="en")
         updated = await db.update_job(created["job_id"], {"content": "new"})
         assert updated["content"] == "new"
 
@@ -124,7 +156,7 @@ class TestJobs:
         This is the highest-risk migration detail: ``/improve/confirm`` rejects
         with 400 if ``preview_hash``/``preview_hashes`` don't round-trip.
         """
-        created = await db.create_job(content="jd")
+        created = await db.create_job(content="jd", language="en")
         await db.update_job(
             created["job_id"],
             {
@@ -149,7 +181,7 @@ class TestJobs:
         assert fetched["role"] == "Staff Engineer"
 
     async def test_update_job_merges_metadata(self, db):
-        created = await db.create_job(content="jd")
+        created = await db.create_job(content="jd", language="en")
         await db.update_job(created["job_id"], {"preview_hash": "h1"})
         await db.update_job(created["job_id"], {"company": "Acme"})
         fetched = await db.get_job(created["job_id"])
@@ -176,47 +208,53 @@ class TestImprovements:
 
 class TestApplications:
     async def test_create_defaults_and_position(self, db):
-        a = await db.create_application(job_id="j1", resume_id="r1")
+        a = await db.create_application(job_id="j1", resume_id="r1", language="en")
         assert a["status"] == "applied"
         assert a["position"] == 0
         assert a["applied_at"] is not None  # applied → stamped
-        b = await db.create_application(job_id="j2", resume_id="r2")
+        b = await db.create_application(job_id="j2", resume_id="r2", language="en")
         assert b["position"] == 1  # appended to the column
 
     async def test_saved_status_has_no_applied_at(self, db):
-        a = await db.create_application(job_id="j1", resume_id="r1", status="saved")
+        a = await db.create_application(job_id="j1", resume_id="r1", language="en", status="saved")
         assert a["applied_at"] is None
 
     async def test_create_dedupes_on_job_and_resume(self, db):
-        a = await db.create_application(job_id="j1", resume_id="r1")
-        again = await db.create_application(job_id="j1", resume_id="r1")
+        a = await db.create_application(job_id="j1", resume_id="r1", language="en")
+        again = await db.create_application(job_id="j1", resume_id="r1", language="en")
         assert again["application_id"] == a["application_id"]
-        assert len(await db.list_applications()) == 1
+        assert len(await db.list_applications(language="en")) == 1
 
     async def test_move_renumbers_columns(self, db):
-        a = await db.create_application(job_id="j1", resume_id="r1")
-        b = await db.create_application(job_id="j2", resume_id="r2")
+        a = await db.create_application(job_id="j1", resume_id="r1", language="en")
+        b = await db.create_application(job_id="j2", resume_id="r2", language="en")
         # Move a to the front of "interview".
         moved = await db.update_application(a["application_id"], {"status": "interview", "position": 0})
         assert moved["status"] == "interview"
         assert moved["position"] == 0
         # The "applied" column renumbered: b is now position 0.
-        applied = await db.list_applications(status="applied")
+        applied = await db.list_applications(language="en", status="applied")
         assert [x["application_id"] for x in applied] == [b["application_id"]]
         assert applied[0]["position"] == 0
 
     async def test_bulk_update_and_delete(self, db):
-        a = await db.create_application(job_id="j1", resume_id="r1")
-        b = await db.create_application(job_id="j2", resume_id="r2")
+        a = await db.create_application(job_id="j1", resume_id="r1", language="en")
+        b = await db.create_application(job_id="j2", resume_id="r2", language="en")
         moved = await db.bulk_update_applications([a["application_id"], b["application_id"]], "rejected")
         assert moved == 2
-        rejected = await db.list_applications(status="rejected")
+        rejected = await db.list_applications(language="en", status="rejected")
         assert {x["position"] for x in rejected} == {0, 1}
         deleted = await db.bulk_delete_applications([a["application_id"]])
         assert deleted == 1
-        remaining = await db.list_applications(status="rejected")
+        remaining = await db.list_applications(language="en", status="rejected")
         assert len(remaining) == 1
         assert remaining[0]["position"] == 0  # renumbered after delete
+
+    async def test_list_applications_scoped_to_tenant(self, db):
+        await db.create_application(job_id="j1", resume_id="r1", language="en")
+        await db.create_application(job_id="j2", resume_id="r2", language="fr")
+        assert len(await db.list_applications(language="en")) == 1
+        assert len(await db.list_applications(language="fr")) == 1
 
 
 class TestApiKeyStore:
@@ -232,9 +270,9 @@ class TestApiKeyStore:
 
 class TestStatsAndReset:
     async def test_get_stats(self, db):
-        await db.create_resume(content="a")
-        await db.set_master_resume((await db.list_resumes())[0]["resume_id"])
-        await db.create_job(content="jd")
+        await db.create_resume(content="a", language="en")
+        await db.set_master_resume((await db.list_resumes(language="en"))[0]["resume_id"], language="en")
+        await db.create_job(content="jd", language="en")
         stats = await db.get_stats()
         assert stats["total_resumes"] == 1
         assert stats["total_jobs"] == 1
@@ -243,13 +281,13 @@ class TestStatsAndReset:
     async def test_reset_database_truncates(self, db, tmp_path, monkeypatch):
         # reset_database also clears settings.data_dir/uploads — isolate it to tmp.
         monkeypatch.setattr("app.database.settings.data_dir", tmp_path)
-        await db.create_resume(content="a")
-        await db.create_job(content="jd")
-        await db.create_application(job_id="j1", resume_id="r1")
+        await db.create_resume(content="a", language="en")
+        await db.create_job(content="jd", language="en")
+        await db.create_application(job_id="j1", resume_id="r1", language="en")
         await db.reset_database()
         stats = await db.get_stats()
         assert stats["total_resumes"] == 0
         assert stats["total_jobs"] == 0
         assert stats["has_master_resume"] is False
         # Applications are cleared too (no orphans after a full reset).
-        assert await db.list_applications() == []
+        assert await db.list_applications(language="en") == []

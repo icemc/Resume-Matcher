@@ -47,15 +47,19 @@ class Resume(Base):
     # omitted entirely when None. The facade reproduces that by only emitting
     # the key when this column is non-null.
     original_markdown: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Tenant key: each supported language is treated as its own tenant, with
+    # its own master resume and its own tailored resumes/jobs/applications.
+    language: Mapped[str] = mapped_column(String, nullable=False, default="en", index=True)
     created_at: Mapped[str] = mapped_column(String, default=_utcnow_iso)
     updated_at: Mapped[str] = mapped_column(String, default=_utcnow_iso)
 
     __table_args__ = (
-        # At most one master resume. Partial unique index enforces the invariant
-        # at the storage layer; ``_master_resume_lock`` remains the primary
-        # (race-free) mechanism in the facade.
+        # At most one master resume per tenant (language). Partial unique index
+        # enforces the invariant at the storage layer; ``_master_resume_lock``
+        # remains the primary (race-free) mechanism in the facade.
         Index(
-            "ux_resumes_single_master",
+            "ux_resumes_single_master_per_language",
+            "language",
             "is_master",
             unique=True,
             sqlite_where=text("is_master = 1"),
@@ -80,6 +84,8 @@ class Job(Base):
     resume_id: Mapped[str | None] = mapped_column(String, nullable=True)
     created_at: Mapped[str] = mapped_column(String, default=_utcnow_iso)
     metadata_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    # Tenant key — see Resume.language.
+    language: Mapped[str] = mapped_column(String, nullable=False, default="en", index=True)
 
 
 class Improvement(Base):
@@ -119,6 +125,8 @@ class Application(Base):
     position: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[str] = mapped_column(String, default=_utcnow_iso)
     updated_at: Mapped[str] = mapped_column(String, default=_utcnow_iso)
+    # Tenant key — see Resume.language.
+    language: Mapped[str] = mapped_column(String, nullable=False, default="en", index=True)
 
 
 class ApiKey(Base):
