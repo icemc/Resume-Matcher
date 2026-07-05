@@ -50,8 +50,13 @@ Generic, reusable guides (Swiss design system, Next.js performance) live in [`..
 | [adding-resume-templates](features/adding-resume-templates.md) | How to add a new template |
 | [enrichment](features/enrichment.md) | AI enrichment flow |
 | [jd-match](features/jd-match.md) | Job description matching |
-| [i18n](features/i18n.md) | Internationalization |
+| [i18n](features/i18n.md) | Internationalization + the language-as-tenant model |
 | [i18n-preparation](features/i18n-preparation.md) | i18n setup notes |
+
+### Plans
+| Doc | Purpose |
+|-----|---------|
+| [language-tenant-dashboards](../plans/language-tenant-dashboards.md) | Each supported language is its own tenant (own URL, own dashboard/tracker/resumes) — full 8-phase design + status |
 
 ### LLM Integration
 | Doc | Purpose |

@@ -8,23 +8,24 @@
 
 ## Route / Page Map
 
-App Router under `app/`. A `(default)` route group wraps the main app in providers; `print/*` is provider-free (server-rendered for headless-Chromium PDF capture).
+App Router under `app/`. Every main-app route is nested under `app/[locale]/` — **the locale segment is the active tenant** (each supported language is its own tenant with its own resumes/tracker/etc.; see [i18n.md](../../docs/agent/features/i18n.md)). A `(default)` route group inside `[locale]` wraps the main app in providers (route groups don't contribute to the URL); `print/*` sits outside `[locale]` entirely and is provider-free (server-rendered for headless-Chromium PDF capture, locale-free by design).
 
 | Route | File | Type | Purpose |
 |-------|------|------|---------|
-| `/` | `app/(default)/page.tsx` | Server | Landing — renders `<Hero/>` |
-| `/dashboard` | `app/(default)/dashboard/page.tsx` | Client | Resume list, upload, delete, retry, status grid |
-| `/builder` | `app/(default)/builder/page.tsx` | Client wrapper → `components/builder/resume-builder.tsx` | Master-resume editor (forms, drag-drop sections, templates, AI regenerate, cover letter / outreach) |
-| `/tailor` | `app/(default)/tailor/page.tsx` | Client | Paste JD → preview/confirm tailored resume (diff modal) |
-| `/tracker` | `app/(default)/tracker/page.tsx` | Client | Kanban application tracker — 7-column board (drag/drop, bulk ops, manual add) |
-| `/settings` | `app/(default)/settings/page.tsx` | Client | LLM provider/model/key, per-provider API keys, features, prompts, language, reset DB |
-| `/resumes/[id]` | `app/(default)/resumes/[id]/page.tsx` | Client | View one resume, download PDF, rename, enrichment modal |
-| `/print/resumes/[id]` | `app/print/resumes/[id]/page.tsx` | **Server** | Print-only resume render for PDF (reads `searchParams` for template settings + `lang`) |
-| `/print/cover-letter/[id]` | `app/print/cover-letter/[id]/page.tsx` | **Server** | Print-only cover-letter render for PDF |
+| `/[locale]` | `app/[locale]/(default)/page.tsx` | Server | Landing — renders `<Hero/>` |
+| `/[locale]/dashboard` | `app/[locale]/(default)/dashboard/page.tsx` | Client | Resume list, upload, delete, retry, status grid — scoped to the tenant |
+| `/[locale]/builder` | `app/[locale]/(default)/builder/page.tsx` | Client wrapper → `components/builder/resume-builder.tsx` | Master-resume editor (forms, drag-drop sections, templates, AI regenerate, cover letter / outreach) |
+| `/[locale]/tailor` | `app/[locale]/(default)/tailor/page.tsx` | Client | Paste JD → preview/confirm tailored resume (diff modal) |
+| `/[locale]/tracker` | `app/[locale]/(default)/tracker/page.tsx` | Client | Kanban application tracker — 7-column board (drag/drop, bulk ops, manual add) |
+| `/[locale]/resume-wizard` | `app/[locale]/(default)/resume-wizard/page.tsx` | Client | AI-led adaptive Q&A flow that builds the tenant's master resume |
+| `/[locale]/settings` | `app/[locale]/(default)/settings/page.tsx` | Client | LLM provider/model/key, per-provider API keys, features, prompts, UI language (global), reset DB |
+| `/[locale]/resumes/[id]` | `app/[locale]/(default)/resumes/[id]/page.tsx` | Client | View one resume, download PDF, rename, enrichment modal |
+| `/print/resumes/[id]` | `app/print/resumes/[id]/page.tsx` | **Server** | Print-only resume render for PDF (reads `searchParams` for template settings + `lang`) — no `[locale]` prefix |
+| `/print/cover-letter/[id]` | `app/print/cover-letter/[id]/page.tsx` | **Server** | Print-only cover-letter render for PDF — no `[locale]` prefix |
 
-`app/layout.tsx` (root) wires fonts (Geist + Space Grotesk) and global CSS. `app/(default)/layout.tsx` nests providers: `StatusCacheProvider` → `LanguageProvider` → `ResumePreviewProvider` → `LocalizedErrorBoundary`.
+`proxy.ts` (Next.js 16's renamed `middleware.ts`) redirects any locale-less path (including bare `/`) to `/${defaultLocale}${pathname}`, excluding `/api`, `/print`, `/_next`, `/docs`, `/redoc`, `/openapi.json`. `app/[locale]/layout.tsx` validates the locale param (`notFound()` on an invalid one) and calls `generateStaticParams()` over the supported locales. `app/layout.tsx` (root) wires fonts (Geist + Space Grotesk) and global CSS. `app/[locale]/(default)/layout.tsx` nests providers: `StatusCacheProvider` → `LanguageProvider` → `ResumePreviewProvider` → `LocalizedErrorBoundary`, plus renders the shared `<TenantNavBar/>` (tenant switcher).
 
-> Most pages are `'use client'`. The `print/*` pages are intentionally server components and fetch from the backend directly via `API_BASE` + `lib/i18n/server.ts` (`translate`). Do not add `'use client'` to them.
+> Most pages are `'use client'`. The `print/*` pages are intentionally server components and fetch from the backend directly via `API_BASE` + `lib/i18n/server.ts` (`translate`). Do not add `'use client'` to them. Internal navigation (`Link`/`router.push`) must go through `tenantPath(locale, path)` (`lib/utils/tenant-paths.ts`) so the active tenant's URL prefix is never dropped.
 
 ---
 
@@ -51,14 +52,16 @@ components/
 lib/
   api/               # backend client (see Data Flow)
   i18n/              # translation engine (see i18n)
-  context/           # status-cache, language-context
-  utils/             # download, html-sanitizer, keyword-matcher, section-helpers
+  context/           # status-cache, language-context (UI lang), tenant-context (useTenant)
+  utils/             # download, html-sanitizer, keyword-matcher, section-helpers,
+                     #   tenant-paths (tenantPath), tenant-storage-key (tenantStorageKey)
   types/             # template-settings, lucide.d.ts
   config/version.ts  # APP_VERSION / codename
   constants/page-dimensions.ts
 hooks/               # use-file-upload, use-regenerate-wizard, use-enrichment-wizard
-i18n/config.ts       # locale list + names/flags (NOTE: distinct from lib/i18n)
-messages/            # en/es/zh/ja/pt-BR JSON (see i18n)
+i18n/config.ts       # locale list + names/flags — also the tenant list (NOTE: distinct from lib/i18n)
+messages/            # en/es/zh/ja/pt-BR/fr JSON (see i18n)
+proxy.ts             # locale-prefix redirect (Next.js 16 Proxy, was middleware.ts)
 tests/               # vitest (see Testing)
 ```
 
@@ -71,17 +74,18 @@ All backend calls go through **`lib/api/`** — never call `fetch` to the backen
 - `lib/api/client.ts` — single source of truth. Exports `apiFetch / apiPost / apiPatch / apiPut / apiDelete`, `API_URL`, `API_BASE`, `getUploadUrl()`.
   - Base URL: `NEXT_PUBLIC_API_URL` (default `'/'`) → `API_BASE` becomes `/api/v1`. On the **server** a `/`-relative base is rewritten to `http://127.0.0.1:8000/api/v1` (`INTERNAL_API_ORIGIN`); browser uses the relative path (proxied by `next.config.ts` rewrites to `BACKEND_ORIGIN`).
   - Default request timeout **240_000ms** (matches backend `wait_for` hard limit). `AbortError` → friendly "Request timed out" message.
-- `lib/api/resume.ts` — resumes/jobs: upload, improve / improve.preview / improve.confirm, fetch, list, update (PATCH), PDF URLs + blob download, delete, cover-letter / outreach generate+update, rename, retry-processing, fetch JD.
-- `lib/api/config.ts` — LLM config, `testLlmConnection`, system `/status`, feature flags, prompt config, **feature prompts** (`FeaturePromptsError` for 422 `missing_placeholders`), **per-provider API-key management** (each provider's key persists independently — switching the active provider no longer wipes another's; stored encrypted server-side), language config, `resetDatabase`. `PROVIDER_INFO` lists supported providers + default models.
+- `lib/api/resume.ts` — resumes/jobs: upload, improve / improve.preview / improve.confirm, fetch, list, update (PATCH), PDF URLs + blob download, delete, cover-letter / outreach generate+update, rename, retry-processing, fetch JD, `fetchConfiguredLanguages()`. `fetchResume`/`fetchResumeList`/`uploadJobDescriptions` take `language` (the tenant) as a required first param, wrapped via `withTenant()` for the query-param endpoints.
+- `lib/api/config.ts` — LLM config, `testLlmConnection`, system `/status`, feature flags, prompt config, **feature prompts** (`FeaturePromptsError` for 422 `missing_placeholders`), **per-provider API-key management** (each provider's key persists independently — switching the active provider no longer wipes another's; stored encrypted server-side), `resetDatabase`. `PROVIDER_INFO` lists supported providers + default models. (No frontend language-config calls — content language is the tenant now, not an independent setting.)
 - `lib/api/enrichment.ts` — AI enrichment (analyze/enhance/apply) and AI regenerate (regenerate/apply-regenerated).
-- `lib/api/tracker.ts` — application-tracker CRUD/bulk over `apiFetch/apiPost/apiPatch/apiDelete`: grouped list, detail (JD + resume), manual add, status/position/notes PATCH, bulk move, delete, bulk-delete.
+- `lib/api/tracker.ts` — application-tracker CRUD/bulk over `apiFetch/apiPost/apiPatch/apiDelete`: grouped list (`listApplications(language)` — tenant-scoped), detail (JD + resume), manual add (`ManualApplicationCreate.language` required), status/position/notes PATCH, bulk move, delete, bulk-delete.
 - `lib/api/index.ts` — barrel re-export (note: not everything is re-exported; some functions are imported from `./resume` / `./config` / `./enrichment` directly).
 
 **Contracts:** `lib/api/*` interfaces mirror backend Pydantic schemas. See [front-end-apis.md](../../docs/agent/apis/front-end-apis.md) and [api-flow-maps.md](../../docs/agent/apis/api-flow-maps.md).
 
 **Shared client state (React Context, not a fetch lib):**
 - `StatusCacheProvider` (`lib/context/status-cache.tsx`) — caches `/status` (LLM health 30min, DB stats 5min stale), with optimistic counter updates. Use `useStatusCache()` / `useIsStatusStale()`.
-- `LanguageProvider` (`lib/context/language-context.tsx`) — UI + content language, localStorage + backend sync. Use `useLanguage()`.
+- `LanguageProvider` (`lib/context/language-context.tsx`) — **UI language only**, localStorage-backed, global across tenants. Use `useLanguage()`.
+- `useTenant()` (`lib/context/tenant-context.tsx`) — the active tenant (content language), derived from the `[locale]` route param. No provider needed. Every tenant-scoped `lib/api/*` call and internal navigation (`tenantPath()`) is threaded from this.
 
 > The **tracker board owns its state locally** — `components/tracker/kanban-board.tsx` holds the columns in `useState` and owns the single `@dnd-kit` `DndContext`. There is **no** `TrackerProvider` / tracker context; don't look for one.
 
@@ -89,11 +93,11 @@ All backend calls go through **`lib/api/`** — never call `fetch` to the backen
 
 ## i18n — READ THIS BEFORE TOUCHING TRANSLATIONS
 
-Two distinct settings, configured independently in Settings:
-- **UI language** — interface text, client-only (`uiLanguage`, localStorage).
-- **Content language** — language the LLM writes resumes/cover letters in (`contentLanguage`, persisted to backend).
+Two architecturally different settings:
+- **UI language** — interface text, client-only (`uiLanguage`, localStorage), global across tenants. Set in Settings.
+- **Tenant (content language)** — each supported language is its own tenant (own URL segment, own resumes/tracker data); the LLM writes content in the tenant's language, resolved server-side from the resume's own `language` column. There is no independent content-language picker — see [i18n.md](../../docs/agent/features/i18n.md).
 
-**Supported locales (source of truth = `i18n/config.ts`):** `en`, `es`, `zh`, `ja`, `pt` (the file is `messages/pt-BR.json`, imported as `pt`). The `docs/agent/features/i18n.md` table is stale — it omits `pt`; trust the code.
+**Supported locales (source of truth = `i18n/config.ts`):** `en`, `es`, `zh`, `ja`, `pt`, `fr` (the file is `messages/pt-BR.json`, imported as `pt`) — must match backend `SUPPORTED_LANGUAGES` exactly.
 
 Engine (no external i18n lib, plain JSON):
 - `i18n/config.ts` — `locales`, `defaultLocale='en'`, `localeNames`, `localeFlags`.
@@ -122,7 +126,7 @@ See [i18n.md](../../docs/agent/features/i18n.md), [i18n-preparation.md](../../do
 
 All UI changes MUST follow the Swiss design system. Pack: [README](../../docs/portable/swiss-design-system/README.md) · [tokens](../../docs/portable/swiss-design-system/tokens.md) · [components](../../docs/portable/swiss-design-system/components.md) · [anti-patterns](../../docs/portable/swiss-design-system/anti-patterns.md) · [layouts](../../docs/portable/swiss-design-system/layouts.md).
 
-Tailwind v4, configured **in CSS** (`app/(default)/css/globals.css`, `@theme inline`) — there is no `tailwind.config`. PostCSS uses `@tailwindcss/postcss`. Light theme only.
+Tailwind v4, configured **in CSS** (`app/[locale]/(default)/css/globals.css`, `@theme inline`) — there is no `tailwind.config`. PostCSS uses `@tailwindcss/postcss`. Light theme only.
 
 | Token | Value | Tailwind |
 |-------|-------|----------|
@@ -162,7 +166,7 @@ Backend must run separately on :8000 (see root CLAUDE.md). Frontend proxies `/ap
 1. All UI MUST follow Swiss International Style (links above). `rounded-none`, 1px black borders, hard shadows, brand tokens.
 2. Run `npm run lint` and `npm run format` before committing frontend changes.
 3. Any `en.json` key change MUST be mirrored across all 5 locale files (see i18n) or the build breaks.
-4. **Textarea Enter-key pattern** — confirmed in code (e.g. `app/(default)/tailor/page.tsx`): when a textarea sits inside a dialog/form that submits on Enter, stop propagation:
+4. **Textarea Enter-key pattern** — confirmed in code (e.g. `app/[locale]/(default)/tailor/page.tsx`): when a textarea sits inside a dialog/form that submits on Enter, stop propagation:
    ```tsx
    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
      if (e.key === 'Enter') e.stopPropagation();
@@ -190,9 +194,11 @@ Backend must run separately on :8000 (see root CLAUDE.md). Frontend proxies `/ap
 
 Specs (`tests/`):
 - **i18n** — `i18n-utils.test.ts` (`getNestedValue` dot-path + `applyParams` substitution), `i18n-locale-parity.test.ts` (every `messages/*.json` must structurally match `en.json` — the in-suite guard for the build break).
-- **lib/utils** — `keyword-matcher.test.ts`, `section-helpers.test.ts`, `html-sanitizer.test.ts` (XSS whitelist), `download-utils.test.ts`.
-- **lib/api** — `api-client.test.ts` (URL resolution, timeout/AbortError; `fetch` stubbed).
-- **components** — `diff-preview-modal.test.tsx`, `regenerate-wizard.test.tsx`.
+- **lib/utils** — `keyword-matcher.test.ts`, `section-helpers.test.ts`, `html-sanitizer.test.ts` (XSS whitelist), `download-utils.test.ts`, `tenant-paths.test.ts`, `tenant-storage-key.test.ts`.
+- **lib/api** — `api-client.test.ts` (URL resolution, timeout/AbortError, `withTenant`; `fetch` stubbed), `api-tracker.test.ts`.
+- **lib/context** — `tenant-context.test.tsx` (`useTenant()` route-param derivation + fallback).
+- **routing** — `locale-routing-proxy.test.ts` (pure `pathnameHasLocale` predicate extracted from `proxy.ts`).
+- **components** — `diff-preview-modal.test.tsx`, `regenerate-wizard.test.tsx`, `tenant-nav-bar.test.tsx`.
 
 Pure logic (i18n, utils, api) is tested directly with stubbed `fetch`/`t`; component specs render via Testing Library. The locale-parity spec mirrors `scripts/check_locale_parity.py` (which the pre-push hook also runs without Node). The local `pre-push` gate runs this vitest suite too when Node is available — `git config core.hooksPath .githooks`; see [`.githooks/README.md`](../../.githooks/README.md).
 
