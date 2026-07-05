@@ -5,9 +5,12 @@ import Image from 'next/image';
 import Link from 'next/link';
 import LayoutGrid from 'lucide-react/dist/esm/icons/layout-grid';
 import { useTranslations } from '@/lib/i18n';
+import { useTenant } from '@/lib/context/tenant-context';
+import { tenantPath } from '@/lib/utils/tenant-paths';
 
 export const SwissGrid = ({ children }: { children: React.ReactNode }) => {
   const { t } = useTranslations();
+  const tenant = useTenant();
 
   return (
     // 1. Outer Wrapper: Fixed height with grid background
@@ -58,14 +61,14 @@ export const SwissGrid = ({ children }: { children: React.ReactNode }) => {
           </div>
           <div className="flex items-center gap-4">
             <Link
-              href="/tracker"
+              href={tenantPath(tenant, '/tracker')}
               className="inline-flex items-center justify-center gap-2 bg-background text-black border border-black px-6 py-2 uppercase font-bold tracking-wide shadow-sw-sm hover:translate-y-[1px] hover:translate-x-[1px] hover:shadow-none transition-all min-w-[140px] text-center"
             >
               <LayoutGrid className="w-4 h-4" />
               {t('nav.applicationTracker')}
             </Link>
             <Link
-              href="/settings"
+              href={tenantPath(tenant, '/settings')}
               className="bg-warning text-black border border-black px-6 py-2 uppercase font-bold tracking-wide shadow-sw-sm hover:translate-y-[1px] hover:translate-x-[1px] hover:shadow-none transition-all min-w-[140px] text-center"
             >
               {t('nav.settings')}

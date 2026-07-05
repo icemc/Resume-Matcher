@@ -16,6 +16,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useTranslations } from '@/lib/i18n';
+import { useTenant } from '@/lib/context/tenant-context';
+import { tenantPath } from '@/lib/utils/tenant-paths';
 import { getApplicationDetail, updateApplication, type ApplicationDetail } from '@/lib/api/tracker';
 
 interface CardDetailModalProps {
@@ -32,6 +34,7 @@ export function CardDetailModal({
   onUpdated,
 }: CardDetailModalProps) {
   const { t } = useTranslations();
+  const tenant = useTenant();
   const router = useRouter();
   const [detail, setDetail] = useState<ApplicationDetail | null>(null);
   const [loading, setLoading] = useState(false);
@@ -166,7 +169,8 @@ export function CardDetailModal({
         <DialogFooter>
           <Button
             onClick={() => {
-              if (detail?.resume_id) router.push(`/builder?id=${detail.resume_id}`);
+              if (detail?.resume_id)
+                router.push(tenantPath(tenant, `/builder?id=${detail.resume_id}`));
             }}
             disabled={!resumeAvailable}
           >

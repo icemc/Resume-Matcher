@@ -3,9 +3,12 @@
 import React from 'react';
 import Link from 'next/link';
 import { useTranslations } from '@/lib/i18n';
+import { useTenant } from '@/lib/context/tenant-context';
+import { tenantPath } from '@/lib/utils/tenant-paths';
 
 export default function Hero() {
   const { t } = useTranslations();
+  const tenant = useTenant();
 
   // Hover translates DOWN-RIGHT (+1, +1) for the press-in effect — matches
   // every other button in the codebase. The previous version translated
@@ -47,7 +50,7 @@ export default function Hero() {
           >
             {t('home.docs')}
           </a>
-          <Link href="/dashboard" className={buttonClass}>
+          <Link href={tenantPath(tenant, '/dashboard')} className={buttonClass}>
             {t('home.launchApp')}
           </Link>
         </div>
