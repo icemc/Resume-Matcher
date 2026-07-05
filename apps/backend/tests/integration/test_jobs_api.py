@@ -28,6 +28,7 @@ class TestJobUpload:
             resp = await client.post("/api/v1/jobs/upload", json={
                 "job_descriptions": ["Senior Engineer at TechCorp"],
                 "resume_id": None,
+                "language": "en",
             })
         assert resp.status_code == 200
         data = resp.json()
@@ -43,6 +44,7 @@ class TestJobUpload:
         async with client:
             resp = await client.post("/api/v1/jobs/upload", json={
                 "job_descriptions": ["JD 1", "JD 2", "JD 3"],
+                "language": "en",
             })
         assert resp.status_code == 200
         assert len(resp.json()["job_id"]) == 3
@@ -51,6 +53,7 @@ class TestJobUpload:
         async with client:
             resp = await client.post("/api/v1/jobs/upload", json={
                 "job_descriptions": [],
+                "language": "en",
             })
         assert resp.status_code == 400
 
@@ -58,6 +61,7 @@ class TestJobUpload:
         async with client:
             resp = await client.post("/api/v1/jobs/upload", json={
                 "job_descriptions": ["  "],
+                "language": "en",
             })
         assert resp.status_code == 400
 

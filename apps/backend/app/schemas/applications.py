@@ -35,6 +35,7 @@ class ApplicationResponse(BaseModel):
     applied_at: str | None = None
     notes: str | None = None
     position: int
+    language: str
     created_at: str
     updated_at: str
 
@@ -66,6 +67,7 @@ class ManualApplicationCreate(BaseModel):
 
     resume_id: str
     job_description: str = Field(min_length=1)
+    language: str
     company: str | None = None
     role: str | None = None
     status: ApplicationStatus = ApplicationStatus.applied

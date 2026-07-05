@@ -27,6 +27,7 @@ class TestUploadGuards:
             resp = await client.post(
                 "/api/v1/resumes/upload",
                 files={"file": ("resume.txt", b"hello", "text/plain")},
+                data={"language": "en"},
             )
         assert resp.status_code == 400
         assert "Invalid file type" in resp.json()["detail"]
@@ -36,6 +37,7 @@ class TestUploadGuards:
             resp = await client.post(
                 "/api/v1/resumes/upload",
                 files={"file": ("resume.pdf", b"", "application/pdf")},
+                data={"language": "en"},
             )
         assert resp.status_code == 400
         assert resp.json()["detail"] == "Empty file"
@@ -46,6 +48,7 @@ class TestUploadGuards:
             resp = await client.post(
                 "/api/v1/resumes/upload",
                 files={"file": ("resume.pdf", oversized, "application/pdf")},
+                data={"language": "en"},
             )
         assert resp.status_code == 413
 
@@ -59,6 +62,7 @@ class TestUploadGuards:
                 resp = await client.post(
                     "/api/v1/resumes/upload",
                     files={"file": ("scanned.pdf", b"%PDF-1.4 image-only", "application/pdf")},
+                    data={"language": "en"},
                 )
         assert resp.status_code == 422
         assert "extract text" in resp.json()["detail"].lower()
@@ -72,6 +76,7 @@ class TestUploadGuards:
             resp = await client.post(
                 "/api/v1/resumes/upload",
                 files={"file": ("broken.pdf", b"%PDF-1.4 broken", "application/pdf")},
+                data={"language": "en"},
             )
         assert resp.status_code == 422
         assert "Failed to parse" in resp.json()["detail"]

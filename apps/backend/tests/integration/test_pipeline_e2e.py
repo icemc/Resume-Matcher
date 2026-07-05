@@ -74,6 +74,7 @@ async def _upload_resume(isolated_db, sample_resume):
             resp = await client.post(
                 "/api/v1/resumes/upload",
                 files={"file": ("resume.pdf", b"%PDF-1.4 fake", "application/pdf")},
+                data={"language": "en"},
             )
     return resp
 
@@ -101,7 +102,7 @@ class TestPipelineCore:
         assert resume_id
 
         # Inspect REAL persisted state via the yielded isolated db.
-        master = await isolated_db.get_master_resume()
+        master = await isolated_db.get_master_resume(language="en")
         assert master is not None
         assert master["resume_id"] == resume_id
         assert master["processing_status"] == "ready"
@@ -113,7 +114,7 @@ class TestPipelineCore:
             master["processed_data"]["summary"] == sample_resume["summary"]
         )
         # Exactly one resume exists, and it is the master.
-        assert len(await isolated_db.list_resumes()) == 1
+        assert len(await isolated_db.list_resumes(language="en")) == 1
 
     async def test_jobs_upload_persists_job_through_router(
         self, isolated_db, client
@@ -134,7 +135,8 @@ class TestPipelineCore:
                     "job_descriptions": [
                         "Senior Python role building scalable FastAPI services. "
                         "Docker and AWS required."
-                    ]
+                    ],
+                    "language": "en",
                 },
             )
 
@@ -168,14 +170,14 @@ class TestPipelineCore:
         resume_id = upload_resp.json()["resume_id"]
 
         # The resume_id is recoverable from the db too (anti-theater).
-        listed = await isolated_db.list_resumes()
+        listed = await isolated_db.list_resumes(language="en")
         assert resume_id in {r["resume_id"] for r in listed}
 
         # 2. Jobs upload.
         async with _new_client() as client:
             jobs_resp = await client.post(
                 "/api/v1/jobs/upload",
-                json={"job_descriptions": ["Senior Python role at TechCorp."]},
+                json={"job_descriptions": ["Senior Python role at TechCorp."], "language": "en"},
             )
         assert jobs_resp.status_code == 200
         job_id = jobs_resp.json()["job_id"][0]
@@ -184,7 +186,7 @@ class TestPipelineCore:
         # 3. Fetch the resume back through the real GET handler.
         async with _new_client() as client:
             fetch_resp = await client.get(
-                "/api/v1/resumes", params={"resume_id": resume_id}
+                "/api/v1/resumes", params={"resume_id": resume_id, "language": "en"}
             )
         assert fetch_resp.status_code == 200
         data = fetch_resp.json()["data"]
@@ -206,10 +208,10 @@ class TestPipelineCore:
         an empty isolated db (sanity guard that the fixture starts clean)."""
         async with client:
             resp = await client.get(
-                "/api/v1/resumes", params={"resume_id": "does-not-exist"}
+                "/api/v1/resumes", params={"resume_id": "does-not-exist", "language": "en"}
             )
         assert resp.status_code == 404
-        assert await isolated_db.list_resumes() == []
+        assert await isolated_db.list_resumes(language="en") == []
 
 
 class TestTailoringPipeline:
@@ -244,7 +246,8 @@ class TestTailoringPipeline:
                 json={
                     "job_descriptions": [
                         "Senior Backend Engineer: Python, FastAPI, Docker, AWS."
-                    ]
+                    ],
+                    "language": "en",
                 },
             )
         assert jobs_resp.status_code == 200
@@ -367,7 +370,7 @@ class TestTailoringPipeline:
         stats = await isolated_db.get_stats()
         assert stats["total_resumes"] == 2
         assert stats["total_improvements"] == 1
-        master = await isolated_db.get_master_resume()
+        master = await isolated_db.get_master_resume(language="en")
         assert master["resume_id"] == resume_id
         assert master["processed_data"]["summary"] == sample_resume["summary"]
 
@@ -392,7 +395,7 @@ class TestTailoringPipeline:
         async with _new_client() as client:
             jobs_resp = await client.post(
                 "/api/v1/jobs/upload",
-                json={"job_descriptions": ["Senior Backend Engineer: Python, FastAPI."]},
+                json={"job_descriptions": ["Senior Backend Engineer: Python, FastAPI."], "language": "en"},
             )
         assert jobs_resp.status_code == 200
         job_id = jobs_resp.json()["job_id"][0]
@@ -497,7 +500,7 @@ class TestConfigurableImproveTimeout:
         async with _new_client() as client:
             jr = await client.post(
                 "/api/v1/jobs/upload",
-                json={"job_descriptions": ["Senior Python / FastAPI role."]},
+                json={"job_descriptions": ["Senior Python / FastAPI role."], "language": "en"},
             )
         job_id = jr.json()["job_id"][0]
 

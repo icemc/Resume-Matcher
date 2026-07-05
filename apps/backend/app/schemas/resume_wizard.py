@@ -97,6 +97,7 @@ class ResumeWizardFinalizeRequest(BaseModel):
     """Request to create the master resume from the wizard draft."""
 
     state: ResumeWizardState
+    language: str
 
     @model_validator(mode="after")
     def _validate_ready_to_finalize(self) -> "ResumeWizardFinalizeRequest":

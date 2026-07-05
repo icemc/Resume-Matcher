@@ -7,6 +7,7 @@ from uuid import uuid4
 from fastapi import APIRouter, HTTPException
 
 from app.database import db
+from app.routers._tenant import validate_tenant_language
 from app.schemas.models import ResumeData, normalize_resume_data
 from app.schemas.resume_wizard import (
     ResumeWizardFinalizeRequest,
@@ -72,7 +73,8 @@ async def finalize_resume_wizard(
 ) -> ResumeWizardFinalizeResponse:
     """Create the master resume from a validated wizard draft."""
     try:
-        current_master = await db.get_master_resume()
+        language = validate_tenant_language(request.language)
+        current_master = await db.get_master_resume(language=language)
         if current_master and current_master.get("processing_status") == "ready":
             raise HTTPException(
                 status_code=409,
@@ -90,6 +92,7 @@ async def finalize_resume_wizard(
         # leave a committed-but-untitled master behind (which would 409 on retry).
         resume = await db.create_resume_atomic_master(
             content=content,
+            language=language,
             content_type="json",
             filename=f"AI Resume Wizard - {name}.json",
             processed_data=data,
