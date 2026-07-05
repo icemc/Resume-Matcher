@@ -137,3 +137,15 @@ export async function apiDelete(endpoint: string): Promise<Response> {
 export function getUploadUrl(): string {
   return `${API_BASE}/resumes/upload`;
 }
+
+/**
+ * Appends the tenant (language) as a query param on an API endpoint.
+ * Every language is its own tenant; the backend requires `?language=xx` on
+ * list/create/upload endpoints.
+ */
+export function withTenant(endpoint: string, language: string): string {
+  const [path, query = ''] = endpoint.split('?');
+  const params = new URLSearchParams(query);
+  params.set('language', language);
+  return `${path}?${params.toString()}`;
+}

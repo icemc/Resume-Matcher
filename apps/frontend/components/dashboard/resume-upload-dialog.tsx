@@ -22,6 +22,7 @@ import { useFileUpload, formatBytes } from '@/hooks/use-file-upload';
 import { getUploadUrl } from '@/lib/api/client';
 import { useTranslations } from '@/lib/i18n';
 import { retryProcessing } from '@/lib/api/resume';
+import { useTenant } from '@/lib/context/tenant-context';
 
 interface ResumeUploadDialogProps {
   trigger?: React.ReactNode;
@@ -44,6 +45,7 @@ export function ResumeUploadDialog({
   onOpenChange,
 }: ResumeUploadDialogProps) {
   const { t } = useTranslations();
+  const tenant = useTenant();
   const [internalOpen, setInternalOpen] = useState(false);
   const [uploadFeedback, setUploadFeedback] = useState<{
     type: 'success' | 'error';
@@ -106,6 +108,7 @@ export function ResumeUploadDialog({
     accept: ACCEPTED_FILE_TYPES.join(','),
     multiple: false,
     uploadUrl: UPLOAD_URL,
+    extraFormData: { language: tenant },
     onUploadSuccess: (uploadedFile, response) => {
       const data = response as {
         resume_id?: string;

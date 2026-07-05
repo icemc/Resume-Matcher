@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { API_BASE, apiFetch, apiPost, getUploadUrl } from '@/lib/api/client';
+import { API_BASE, apiFetch, apiPost, getUploadUrl, withTenant } from '@/lib/api/client';
 
 /**
  * The single backend client. Tests cover URL resolution, JSON POST shape, and
@@ -58,6 +58,22 @@ describe('api client', () => {
     });
   });
 
+  describe('withTenant', () => {
+    it('appends a language query param to an endpoint with no query string', () => {
+      expect(withTenant('/resumes/list', 'en')).toBe('/resumes/list?language=en');
+    });
+
+    it('preserves existing query params alongside the tenant', () => {
+      expect(withTenant('/resumes/list?include_master=true', 'fr')).toBe(
+        '/resumes/list?include_master=true&language=fr'
+      );
+    });
+
+    it('overwrites an existing language param rather than duplicating it', () => {
+      expect(withTenant('/applications?language=en', 'fr')).toBe('/applications?language=fr');
+    });
+  });
+
   describe('timeout / error handling', () => {
     it('maps an AbortError to a friendly timeout message', async () => {
       const abortErr = new Error('aborted');
@@ -74,14 +90,15 @@ describe('api client', () => {
     it('aborts after the timeout and reports a timeout error', async () => {
       vi.useFakeTimers();
       try {
-        fetchMock.mockImplementation((_url: string, init: RequestInit) =>
-          new Promise((_resolve, reject) => {
-            init.signal?.addEventListener('abort', () => {
-              const e = new Error('The operation was aborted');
-              e.name = 'AbortError';
-              reject(e);
-            });
-          })
+        fetchMock.mockImplementation(
+          (_url: string, init: RequestInit) =>
+            new Promise((_resolve, reject) => {
+              init.signal?.addEventListener('abort', () => {
+                const e = new Error('The operation was aborted');
+                e.name = 'AbortError';
+                reject(e);
+              });
+            })
         );
         const promise = apiFetch('/slow', undefined, 5000);
         const expectation = expect(promise).rejects.toThrow(/timed out/i);

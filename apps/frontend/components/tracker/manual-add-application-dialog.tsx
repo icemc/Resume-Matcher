@@ -18,6 +18,7 @@ import { Dropdown } from '@/components/ui/dropdown';
 import { useTranslations } from '@/lib/i18n';
 import { fetchResumeList, type ResumeListItem } from '@/lib/api/resume';
 import { createApplication, type ApplicationStatus } from '@/lib/api/tracker';
+import { useTenant } from '@/lib/context/tenant-context';
 
 interface ManualAddApplicationDialogProps {
   open: boolean;
@@ -31,6 +32,7 @@ export function ManualAddApplicationDialog({
   onCreated,
 }: ManualAddApplicationDialogProps) {
   const { t } = useTranslations();
+  const tenant = useTenant();
   const [resumes, setResumes] = useState<ResumeListItem[]>([]);
   const [resumeId, setResumeId] = useState('');
   const [jobDescription, setJobDescription] = useState('');
@@ -43,13 +45,13 @@ export function ManualAddApplicationDialog({
   useEffect(() => {
     if (!open) return;
     // Include the master resume — users may track an application against it.
-    fetchResumeList(true)
+    fetchResumeList(tenant, true)
       .then((items) => {
         setResumes(items);
         if (items.length > 0) setResumeId((prev) => prev || items[0].resume_id);
       })
       .catch(() => setResumes([]));
-  }, [open]);
+  }, [open, tenant]);
 
   const resumeLabel = (r: ResumeListItem): string =>
     r.title || r.filename || t('tracker.manualAdd.untitledResume');
@@ -77,6 +79,7 @@ export function ManualAddApplicationDialog({
       await createApplication({
         resume_id: resumeId,
         job_description: jobDescription.trim(),
+        language: tenant,
         company: company.trim() || undefined,
         role: role.trim() || undefined,
         status,
