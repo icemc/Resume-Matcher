@@ -27,6 +27,7 @@ import {
   type ApplicationColumns,
   type ApplicationStatus,
 } from '@/lib/api/tracker';
+import { useTenant } from '@/lib/context/tenant-context';
 import { KanbanColumn } from './kanban-column';
 import { BulkActionBar } from './bulk-action-bar';
 import { CardDetailModal } from './card-detail-modal';
@@ -42,6 +43,7 @@ function emptyColumns(): ApplicationColumns {
 
 export function KanbanBoard() {
   const { t } = useTranslations();
+  const tenant = useTenant();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -63,7 +65,7 @@ export function KanbanBoard() {
 
   const load = async () => {
     try {
-      const data = await listApplications();
+      const data = await listApplications(tenant);
       // Ensure all seven keys exist even if the server omits an empty one.
       setColumns({ ...emptyColumns(), ...data.columns });
       setError(null);
@@ -77,7 +79,7 @@ export function KanbanBoard() {
   useEffect(() => {
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [tenant]);
 
   const allCards: Application[] = useMemo(
     () => APPLICATION_STATUS_ORDER.flatMap((status) => columns[status]),

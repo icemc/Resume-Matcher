@@ -7,33 +7,43 @@
 ```
 apps/frontend/
 ├── app/
-│   ├── (default)/           # Main app routes
-│   │   ├── page.tsx         # Landing (/)
-│   │   ├── dashboard/       # /dashboard
-│   │   ├── builder/         # /builder
-│   │   ├── tailor/          # /tailor
-│   │   ├── settings/        # /settings
-│   │   └── resumes/[id]/    # /resumes/[id]
-│   └── print/               # Print routes for PDF
+│   ├── [locale]/             # Tenant-scoped routes — locale = tenant (en, es, zh, ja, pt, fr)
+│   │   ├── layout.tsx        # Validates the locale param, generateStaticParams()
+│   │   └── (default)/        # Main app routes (route group — no URL contribution)
+│   │       ├── page.tsx      # Landing (/[locale])
+│   │       ├── dashboard/    # /[locale]/dashboard
+│   │       ├── builder/      # /[locale]/builder
+│   │       ├── tailor/       # /[locale]/tailor
+│   │       ├── tracker/      # /[locale]/tracker
+│   │       ├── settings/     # /[locale]/settings
+│   │       ├── resume-wizard/# /[locale]/resume-wizard
+│   │       └── resumes/[id]/ # /[locale]/resumes/[id]
+│   └── print/                # Print routes for PDF — locale-free by design
+├── proxy.ts                  # Redirects locale-less paths to /${defaultLocale}${pathname}
 ├── components/
 │   ├── ui/                  # Button, Input, Dialog, etc.
 │   ├── builder/             # ResumeBuilder, forms/
-│   ├── preview/             # PaginatedPreview, usePagination
-│   └── resume/              # Templates (single, two-column)
+│   ├── tenant/               # tenant-nav-bar.tsx — shared tenant switcher chrome
+│   ├── tracker/              # Kanban board
+│   ├── preview/              # PaginatedPreview, usePagination
+│   └── resume/               # Templates (single, two-column)
 ├── lib/
-│   ├── api/                 # client.ts, resume.ts, config.ts
-│   ├── context/             # status-cache.tsx, language-context.tsx
-│   └── constants/           # page-dimensions.ts
-└── messages/                # i18n translations
+│   ├── api/                  # client.ts, resume.ts, tracker.ts, config.ts
+│   ├── context/               # status-cache.tsx, language-context.tsx (UI language only), tenant-context.tsx (useTenant())
+│   ├── utils/                 # tenant-paths.ts, tenant-storage-key.ts, ...
+│   └── constants/             # page-dimensions.ts
+└── messages/                 # i18n translations
 ```
+
+> Each supported language is its own **tenant** — see [i18n.md](../features/i18n.md) and [language-tenant-dashboards.md](../../plans/language-tenant-dashboards.md) for the full architecture.
 
 ## Pages
 
-### Dashboard (`/dashboard`)
-- Master resume card + tailored resume tiles
+### Dashboard (`/[locale]/dashboard`)
+- Master resume card + tailored resume tiles, scoped to the active tenant (`useTenant()`)
 - States: `loading | pending | processing | ready | failed`
 - Auto-refreshes on window focus
-- localStorage: `master_resume_id`
+- Master resume id is derived live from `fetchResumeList(tenant, true)`'s `is_master` flag — **not** cached in localStorage (the old `master_resume_id` key is retired)
 
 ### Builder (`/builder`)
 - Left: Editor Panel (forms + formatting controls)
@@ -72,9 +82,17 @@ const { status, refreshStatus, incrementResumes, decrementResumes } = useStatusC
 
 ### LanguageProvider
 ```typescript
-const { contentLanguage, setContentLanguage } = useLanguage();
+const { uiLanguage, setUiLanguage } = useLanguage();
 ```
-- Content generation language (en, es, zh, ja)
+- **UI language only** — one global setting shared across every tenant, localStorage-backed.
+- Content language is no longer a separate setting here — it *is* the tenant (see `useTenant()` below).
+
+### `useTenant()`
+```typescript
+const tenant = useTenant(); // from lib/context/tenant-context.tsx
+```
+- Derives the active tenant from the `[locale]` route param (`useParams()`), falling back to the default locale for an invalid/missing segment.
+- No provider needed — purely derived.
 
 ## API Client (`lib/api/`)
 
@@ -82,10 +100,10 @@ const { contentLanguage, setContentLanguage } = useLanguage();
 import { fetchResume, API_BASE } from '@/lib/api';
 
 // client.ts exports
-API_URL, API_BASE, apiFetch, apiPost, apiPatch, apiDelete
+API_URL, API_BASE, apiFetch, apiPost, apiPatch, apiDelete, withTenant
 
-// resume.ts
-uploadJobDescriptions, improveResume, fetchResume, fetchResumeList
+// resume.ts — fetchResume/fetchResumeList/uploadJobDescriptions take language (tenant) as a required param
+uploadJobDescriptions, improveResume, fetchResume, fetchResumeList, fetchConfiguredLanguages
 updateResume, downloadResumePdf, deleteResume
 
 // config.ts
@@ -94,11 +112,12 @@ fetchLlmConfig, updateLlmConfig, testLlmConnection, fetchSystemStatus
 
 ## localStorage Keys
 
-| Key | Purpose |
-|-----|---------|
-| `master_resume_id` | Master resume UUID |
-| `resume_builder_draft` | Auto-saved form data |
-| `resume_builder_settings` | Template preferences |
+| Key | Scope | Purpose |
+|-----|-------|---------|
+| `resume_matcher_ui_language` | Global | UI language |
+| `${baseKey}_${tenant}` (via `tenantStorageKey()`) | Per-tenant | Auto-saved builder/wizard drafts + template settings |
+
+`master_resume_id` is **retired** — always derived live from the tenant-scoped resume list, never cached.
 
 ## Pagination System
 

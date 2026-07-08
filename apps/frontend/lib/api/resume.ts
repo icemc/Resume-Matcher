@@ -2,7 +2,15 @@ import { ImprovedResult } from '@/components/common/resume_previewer_context';
 import type { ResumeData } from '@/components/dashboard/resume-component';
 import { type TemplateSettings } from '@/lib/types/template-settings';
 import { type Locale } from '@/i18n/config';
-import { API_BASE, DEFAULT_TIMEOUT_MS, apiPost, apiPatch, apiDelete, apiFetch } from './client';
+import {
+  API_BASE,
+  DEFAULT_TIMEOUT_MS,
+  apiPost,
+  apiPatch,
+  apiDelete,
+  apiFetch,
+  withTenant,
+} from './client';
 
 // Matches backend schemas/models.py ResumeData
 interface ProcessedResume {
@@ -65,6 +73,7 @@ interface ResumeResponse {
     outreach_message?: string | null;
     parent_id?: string | null; // For determining if resume is tailored
     title?: string | null;
+    is_master: boolean;
   };
 }
 
@@ -138,12 +147,14 @@ async function postImprove(
 
 /** Uploads job descriptions and returns a job_id */
 export async function uploadJobDescriptions(
+  language: string,
   descriptions: string[],
   resumeId: string
 ): Promise<string> {
   const res = await apiPost('/jobs/upload', {
     job_descriptions: descriptions,
     resume_id: resumeId,
+    language,
   });
   if (!res.ok) throw new Error(`Upload failed with status ${res.status}`);
   const data = await res.json();
@@ -184,8 +195,13 @@ export async function confirmImproveResume(
 }
 
 /** Fetches a raw resume record for previewing the original upload */
-export async function fetchResume(resumeId: string): Promise<ResumeResponse['data']> {
-  const res = await apiFetch(`/resumes?resume_id=${encodeURIComponent(resumeId)}`);
+export async function fetchResume(
+  language: string,
+  resumeId: string
+): Promise<ResumeResponse['data']> {
+  const res = await apiFetch(
+    withTenant(`/resumes?resume_id=${encodeURIComponent(resumeId)}`, language)
+  );
   if (!res.ok) {
     throw new Error(`Failed to load resume (status ${res.status}).`);
   }
@@ -195,13 +211,28 @@ export async function fetchResume(resumeId: string): Promise<ResumeResponse['dat
   return payload.data;
 }
 
-export async function fetchResumeList(includeMaster = false): Promise<ResumeListItem[]> {
-  const res = await apiFetch(`/resumes/list?include_master=${includeMaster ? 'true' : 'false'}`);
+export async function fetchResumeList(
+  language: string,
+  includeMaster = false
+): Promise<ResumeListItem[]> {
+  const res = await apiFetch(
+    withTenant(`/resumes/list?include_master=${includeMaster ? 'true' : 'false'}`, language)
+  );
   if (!res.ok) {
     throw new Error(`Failed to load resumes list (status ${res.status}).`);
   }
   const payload = (await res.json()) as { data: ResumeListItem[] };
   return payload.data;
+}
+
+/** Lists tenants (languages) that have at least one resume. Not tenant-scoped. */
+export async function fetchConfiguredLanguages(): Promise<string[]> {
+  const res = await apiFetch('/resumes/configured-languages');
+  if (!res.ok) {
+    throw new Error(`Failed to load configured languages (status ${res.status}).`);
+  }
+  const payload = (await res.json()) as { languages: string[] };
+  return payload.languages;
 }
 
 export async function updateResume(

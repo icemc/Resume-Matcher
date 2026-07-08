@@ -4,6 +4,7 @@ import {
   bulkDeleteApplications,
   createApplication,
   deleteApplication,
+  listApplications,
   updateApplication,
 } from '@/lib/api/tracker';
 import { llmProviderToKeyProvider } from '@/lib/api/config';
@@ -70,11 +71,27 @@ describe('tracker API client', () => {
     fetchMock.mockResolvedValue(
       new Response(JSON.stringify({ application_id: 'x' }), { status: 200 })
     );
-    await createApplication({ resume_id: 'r1', job_description: 'JD', status: 'saved' });
+    await createApplication({
+      resume_id: 'r1',
+      job_description: 'JD',
+      language: 'en',
+      status: 'saved',
+    });
     const { url, options } = lastCall();
     expect(url).toContain('/applications');
     expect(options.method).toBe('POST');
-    expect(JSON.parse(String(options.body))).toMatchObject({ resume_id: 'r1', status: 'saved' });
+    expect(JSON.parse(String(options.body))).toMatchObject({
+      resume_id: 'r1',
+      language: 'en',
+      status: 'saved',
+    });
+  });
+
+  it('listApplications GETs /applications with the tenant as a query param', async () => {
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({ columns: {} }), { status: 200 }));
+    await listApplications('fr');
+    const { url } = lastCall();
+    expect(url).toContain('/applications?language=fr');
   });
 
   it('deleteApplication DELETEs /applications/{id}', async () => {

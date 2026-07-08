@@ -12,10 +12,13 @@ import {
   uploadJobDescriptions,
   previewImproveResume,
   confirmImproveResume,
+  fetchResumeList,
 } from '@/lib/api/resume';
 import { fetchPromptConfig, type PromptOption } from '@/lib/api/config';
 import { Dropdown } from '@/components/ui/dropdown';
 import { useStatusCache } from '@/lib/context/status-cache';
+import { useTenant } from '@/lib/context/tenant-context';
+import { tenantPath } from '@/lib/utils/tenant-paths';
 import { Loader2, ArrowLeft, AlertTriangle, Settings } from 'lucide-react';
 import { useTranslations } from '@/lib/i18n';
 import { DiffPreviewModal } from '@/components/tailor/diff-preview-modal';
@@ -23,6 +26,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 export default function TailorPage() {
   const { t } = useTranslations();
+  const tenant = useTenant();
   const [jobDescription, setJobDescription] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -79,13 +83,24 @@ export default function TailorPage() {
   const isLlmConfigured = !statusLoading && systemStatus?.llm_configured;
 
   useEffect(() => {
-    const storedId = localStorage.getItem('master_resume_id');
-    if (!storedId) {
-      router.push('/dashboard');
-    } else {
-      setMasterResumeId(storedId);
-    }
-  }, [router]);
+    let cancelled = false;
+    fetchResumeList(tenant, true)
+      .then((resumes) => {
+        if (cancelled) return;
+        const master = resumes.find((r) => r.is_master);
+        if (!master) {
+          router.push(tenantPath(tenant, '/dashboard'));
+        } else {
+          setMasterResumeId(master.resume_id);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) router.push(tenantPath(tenant, '/dashboard'));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [router, tenant]);
 
   useEffect(() => {
     let cancelled = false;
@@ -155,9 +170,9 @@ export default function TailorPage() {
 
     const newResumeId = confirmed?.data?.resume_id;
     if (newResumeId) {
-      router.push(`/resumes/${newResumeId}`);
+      router.push(tenantPath(tenant, `/resumes/${newResumeId}`));
     } else {
-      router.push('/builder');
+      router.push(tenantPath(tenant, '/builder'));
     }
   };
 
@@ -173,7 +188,7 @@ export default function TailorPage() {
     try {
       // 1. Upload Job Description
       // The API expects an array of strings
-      const jobId = await uploadJobDescriptions([description], resumeId);
+      const jobId = await uploadJobDescriptions(tenant, [description], resumeId);
       incrementJobs(); // Update cached counter
 
       // 2. Preview Resume
@@ -358,7 +373,7 @@ export default function TailorPage() {
                   {t('tailor.noApiKeyMessage')}
                 </p>
                 <Link
-                  href="/settings"
+                  href={tenantPath(tenant, '/settings')}
                   className="inline-flex items-center gap-2 mt-3 text-amber-700 hover:text-amber-900 transition-colors"
                 >
                   <Settings className="w-4 h-4" />

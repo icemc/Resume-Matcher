@@ -5,9 +5,12 @@ import Link from 'next/link';
 import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
 import { KanbanBoard } from '@/components/tracker/kanban-board';
 import { useTranslations } from '@/lib/i18n';
+import { useTenant } from '@/lib/context/tenant-context';
+import { tenantPath } from '@/lib/utils/tenant-paths';
 
 export default function TrackerPage() {
   const { t } = useTranslations();
+  const tenant = useTenant();
   return (
     // Fill the viewport so the Swiss canvas grows with the window; the board
     // area flexes to the available height and the columns scroll internally.
@@ -21,7 +24,7 @@ export default function TrackerPage() {
     >
       <div className="mx-auto flex min-h-0 w-full max-w-[104rem] flex-1 flex-col">
         <Link
-          href="/dashboard"
+          href={tenantPath(tenant, '/dashboard')}
           className="mb-3 inline-flex shrink-0 items-center gap-1 self-start font-mono text-xs uppercase text-ink-soft hover:text-primary"
         >
           <ArrowLeft className="h-3.5 w-3.5" />

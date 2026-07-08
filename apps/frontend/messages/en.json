@@ -47,6 +47,11 @@
     "goToSettings": "Go to Settings",
     "applicationTracker": "Application Tracker"
   },
+  "tenantSwitcher": {
+    "label": "Language",
+    "configured": "Configured",
+    "setUp": "Not set up yet"
+  },
   "dashboard": {
     "title": "Dashboard",
     "subtitle": "Manage your resumes and job applications",
@@ -592,8 +597,6 @@
     "apiKey": "API Key",
     "apiKeyPlaceholder": "Enter your API key",
     "saveApiKey": "Save API Key",
-    "contentLanguage": "Content Language",
-    "contentLanguageDescription": "Language for generated content (resumes, cover letters)",
     "uiLanguage": "UI Language",
     "uiLanguageDescription": "Language for the user interface",
     "theme": "Theme",

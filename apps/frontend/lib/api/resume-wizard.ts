@@ -113,9 +113,10 @@ export async function postResumeWizardTurn(
 }
 
 export async function finalizeResumeWizard(
-  state: ResumeWizardState
+  state: ResumeWizardState,
+  language: string
 ): Promise<ResumeWizardFinalizeResponse> {
-  const response = await apiPost('/resume-wizard/finalize', { state });
+  const response = await apiPost('/resume-wizard/finalize', { state, language });
   if (!response.ok) {
     const text = await response.text().catch(() => '');
     throw new Error(text || `Resume wizard finalize failed with status ${response.status}`);

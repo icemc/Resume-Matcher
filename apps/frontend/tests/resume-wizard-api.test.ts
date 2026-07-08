@@ -54,9 +54,29 @@ describe('resume wizard api', () => {
     expect(body.state.step).toBe('intro');
   });
 
+  it('sends the tenant language on finalize', async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          message: 'ok',
+          request_id: 'r1',
+          resume_id: 'res-1',
+          processing_status: 'ready',
+          is_master: true,
+        }),
+        { status: 200 }
+      )
+    );
+    await finalizeResumeWizard(createInitialResumeWizardState(), 'fr');
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe('/api/v1/resume-wizard/finalize');
+    const body = JSON.parse(init.body as string);
+    expect(body.language).toBe('fr');
+  });
+
   it('throws endpoint text when finalize fails', async () => {
     fetchMock.mockResolvedValueOnce(new Response('already exists', { status: 409 }));
-    await expect(finalizeResumeWizard(createInitialResumeWizardState())).rejects.toThrow(
+    await expect(finalizeResumeWizard(createInitialResumeWizardState(), 'en')).rejects.toThrow(
       /already exists/
     );
   });

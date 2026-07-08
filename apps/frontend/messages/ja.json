@@ -47,6 +47,11 @@
     "goToSettings": "設定へ",
     "applicationTracker": "応募トラッカー"
   },
+  "tenantSwitcher": {
+    "label": "言語",
+    "configured": "設定済み",
+    "setUp": "未設定"
+  },
   "dashboard": {
     "title": "ダッシュボード",
     "subtitle": "履歴書と求人応募を管理",
@@ -592,8 +597,6 @@
     "apiKey": "APIキー",
     "apiKeyPlaceholder": "APIキーを入力",
     "saveApiKey": "APIキーを保存",
-    "contentLanguage": "コンテンツ言語",
-    "contentLanguageDescription": "生成コンテンツの言語（履歴書、カバーレター）",
     "uiLanguage": "UI言語",
     "uiLanguageDescription": "ユーザーインターフェースの言語",
     "theme": "テーマ",

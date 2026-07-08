@@ -37,6 +37,7 @@ export type FileUploadOptions = {
   onUploadSuccess?: (uploadedFile: FileWithPreview, response: Record<string, unknown>) => void;
   onUploadError?: (file: FileWithPreview, error: string) => void;
   uploadUrl?: string; // API endpoint for uploading
+  extraFormData?: Record<string, string>; // Additional fields appended to the upload FormData
 };
 
 export type FileUploadState = {
@@ -87,6 +88,7 @@ export const useFileUpload = (
     onUploadSuccess,
     onUploadError,
     uploadUrl,
+    extraFormData,
   } = options;
 
   const [state, setState] = useState<FileUploadState>({
@@ -222,6 +224,11 @@ export const useFileUpload = (
 
       const formData = new FormData();
       formData.append('file', fileToUpload.file); // FastAPI expects 'file' field
+      if (extraFormData) {
+        for (const [key, value] of Object.entries(extraFormData)) {
+          formData.append(key, value);
+        }
+      }
 
       markUploadStarted();
 
@@ -316,7 +323,14 @@ export const useFileUpload = (
         markUploadFinished();
       }
     },
-    [markUploadFinished, markUploadStarted, onUploadError, onUploadSuccess, uploadUrl]
+    [
+      markUploadFinished,
+      markUploadStarted,
+      onUploadError,
+      onUploadSuccess,
+      uploadUrl,
+      extraFormData,
+    ]
   );
 
   const addFilesAndUpload = useCallback(

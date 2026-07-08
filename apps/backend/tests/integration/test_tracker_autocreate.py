@@ -29,7 +29,10 @@ async def _preview_then_confirm(isolated_db, sample_resume):
     async with _new_client() as client:
         jobs_resp = await client.post(
             "/api/v1/jobs/upload",
-            json={"job_descriptions": ["Senior Backend Engineer at Acme Corp: Python, FastAPI."]},
+            json={
+                "job_descriptions": ["Senior Backend Engineer at Acme Corp: Python, FastAPI."],
+                "language": "en",
+            },
         )
     job_id = jobs_resp.json()["job_id"][0]
 
@@ -105,7 +108,7 @@ class TestTrackerAutoCreate:
         resume_id, job_id, tailored_id = await _preview_then_confirm(isolated_db, sample_resume)
 
         async with _new_client() as client:
-            board = (await client.get("/api/v1/applications")).json()["columns"]
+            board = (await client.get("/api/v1/applications?language=en")).json()["columns"]
 
         applied = board["applied"]
         assert len(applied) == 1
@@ -125,5 +128,5 @@ class TestTrackerAutoCreate:
         # A second confirm creates a *new* tailored resume id, so it's a distinct
         # card — verify at least the first path produced exactly one so far.
         async with _new_client() as client:
-            board = (await client.get("/api/v1/applications")).json()["columns"]
+            board = (await client.get("/api/v1/applications?language=en")).json()["columns"]
         assert len(board["applied"]) == 1

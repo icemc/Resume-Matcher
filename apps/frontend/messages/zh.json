@@ -47,6 +47,11 @@
     "goToSettings": "前往设置",
     "applicationTracker": "申请追踪"
   },
+  "tenantSwitcher": {
+    "label": "语言",
+    "configured": "已配置",
+    "setUp": "尚未设置"
+  },
   "dashboard": {
     "title": "仪表板",
     "subtitle": "管理您的简历和求职申请",
@@ -592,8 +597,6 @@
     "apiKey": "API 密钥",
     "apiKeyPlaceholder": "输入您的API密钥",
     "saveApiKey": "保存API密钥",
-    "contentLanguage": "内容语言",
-    "contentLanguageDescription": "生成内容的语言（简历、求职信）",
     "uiLanguage": "界面语言",
     "uiLanguageDescription": "用户界面的语言",
     "theme": "主题",

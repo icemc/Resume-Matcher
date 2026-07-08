@@ -12,7 +12,10 @@ const push = vi.fn();
 const incrementResumes = vi.fn();
 const setHasMasterResume = vi.fn();
 
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }));
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push }),
+  useParams: () => ({ locale: 'en' }),
+}));
 vi.mock('@/lib/i18n', () => ({ useTranslations: () => ({ t: (key: string) => key }) }));
 vi.mock('@/lib/context/status-cache', () => ({
   useStatusCache: () => ({ incrementResumes, setHasMasterResume }),
@@ -71,7 +74,7 @@ describe('ResumeWizardPage', () => {
 
   it('moves to review via the Review action', async () => {
     localStorage.setItem(
-      'resume_wizard_draft',
+      'resume_wizard_draft_en',
       JSON.stringify(
         makeState({
           step: 'question',
@@ -110,7 +113,7 @@ describe('ResumeWizardPage', () => {
 
   it('finalizes a review draft, updates status cache, clears the draft, and routes to builder', async () => {
     localStorage.setItem(
-      'resume_wizard_draft',
+      'resume_wizard_draft_en',
       JSON.stringify(
         makeState({
           step: 'review',
@@ -134,18 +137,23 @@ describe('ResumeWizardPage', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'resumeWizard.actions.create' }));
 
     await waitFor(() => {
-      expect(mockedFinalize).toHaveBeenCalledWith(expect.objectContaining({ step: 'review' }));
-      expect(localStorage.getItem('master_resume_id')).toBe('resume_123');
-      expect(localStorage.getItem('resume_wizard_draft')).toBeNull();
+      expect(mockedFinalize).toHaveBeenCalledWith(
+        expect.objectContaining({ step: 'review' }),
+        'en'
+      );
+      // The master_resume_id localStorage key is retired: navigation carries
+      // the new resume id directly, and nothing writes it back to storage.
+      expect(localStorage.getItem('master_resume_id')).toBeNull();
+      expect(localStorage.getItem('resume_wizard_draft_en')).toBeNull();
       expect(incrementResumes).toHaveBeenCalledTimes(1);
       expect(setHasMasterResume).toHaveBeenCalledWith(true);
-      expect(push).toHaveBeenCalledWith('/builder?id=resume_123');
+      expect(push).toHaveBeenCalledWith('/en/builder?id=resume_123');
     });
   });
 
   it('shows an error and preserves the question when a turn fails', async () => {
     localStorage.setItem(
-      'resume_wizard_draft',
+      'resume_wizard_draft_en',
       JSON.stringify(
         makeState({
           step: 'question',
@@ -168,7 +176,7 @@ describe('ResumeWizardPage', () => {
     // workExperience is a string, not an array — the unguarded path would crash
     // when the preview calls .map(). The normalizer must coerce it to [].
     localStorage.setItem(
-      'resume_wizard_draft',
+      'resume_wizard_draft_en',
       JSON.stringify({
         step: 'question',
         current_question: { text: 'Recovered question?', section: 'skills' },
@@ -187,7 +195,7 @@ describe('ResumeWizardPage', () => {
     // A numeric name would make a later personalInfo.name.trim() throw; the
     // normalizer must coerce personalInfo fields to strings.
     localStorage.setItem(
-      'resume_wizard_draft',
+      'resume_wizard_draft_en',
       JSON.stringify({
         step: 'question',
         current_question: { text: 'Recovered q2?', section: 'skills' },
@@ -208,7 +216,7 @@ describe('ResumeWizardPage', () => {
 
   it('dispatches a skip turn', async () => {
     localStorage.setItem(
-      'resume_wizard_draft',
+      'resume_wizard_draft_en',
       JSON.stringify(
         makeState({
           step: 'question',
@@ -236,7 +244,7 @@ describe('ResumeWizardPage', () => {
 
   it('dispatches a back turn when history exists', async () => {
     localStorage.setItem(
-      'resume_wizard_draft',
+      'resume_wizard_draft_en',
       JSON.stringify(
         makeState({
           step: 'question',
@@ -271,7 +279,7 @@ describe('ResumeWizardPage', () => {
 
   it('keep-adding returns to a question step locally without an API call', async () => {
     localStorage.setItem(
-      'resume_wizard_draft',
+      'resume_wizard_draft_en',
       JSON.stringify(
         makeState({
           step: 'review',

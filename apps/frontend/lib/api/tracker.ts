@@ -1,4 +1,4 @@
-import { apiFetch, apiPost, apiPatch, apiDelete } from './client';
+import { apiFetch, apiPost, apiPatch, apiDelete, withTenant } from './client';
 
 // The seven stable Kanban columns (keys are decoupled from i18n labels).
 export type ApplicationStatus =
@@ -50,6 +50,7 @@ export interface ApplicationListResponse {
 export interface ManualApplicationCreate {
   resume_id: string;
   job_description: string;
+  language: string;
   company?: string;
   role?: string;
   status?: ApplicationStatus;
@@ -106,8 +107,8 @@ async function asJson<T>(res: Response, fallback: string): Promise<T> {
 }
 
 // List all applications grouped by status column.
-export async function listApplications(): Promise<ApplicationListResponse> {
-  const res = await apiFetch('/applications', { credentials: 'include' });
+export async function listApplications(language: string): Promise<ApplicationListResponse> {
+  const res = await apiFetch(withTenant('/applications', language), { credentials: 'include' });
   return asJson<ApplicationListResponse>(res, 'Failed to load applications');
 }
 

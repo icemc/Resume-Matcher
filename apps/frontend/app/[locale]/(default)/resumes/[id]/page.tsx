@@ -18,14 +18,15 @@ import { ArrowLeft, Edit, Download, Loader2, AlertCircle, Sparkles, Pencil } fro
 import { EnrichmentModal } from '@/components/enrichment/enrichment-modal';
 import { useTranslations } from '@/lib/i18n';
 import { withLocalizedDefaultSections } from '@/lib/utils/section-helpers';
-import { useLanguage } from '@/lib/context/language-context';
+import { useTenant } from '@/lib/context/tenant-context';
+import { tenantPath } from '@/lib/utils/tenant-paths';
 import { downloadBlobAsFile, openUrlInNewTab, sanitizeFilename } from '@/lib/utils/download';
 
 type ProcessingStatus = 'pending' | 'processing' | 'ready' | 'failed';
 
 export default function ResumeViewerPage() {
   const { t } = useTranslations();
-  const { uiLanguage } = useLanguage();
+  const tenant = useTenant();
   const params = useParams();
   const router = useRouter();
   const { decrementResumes, setHasMasterResume } = useStatusCache();
@@ -59,7 +60,7 @@ export default function ResumeViewerPage() {
       try {
         setLoading(true);
         setError(null);
-        const data = await fetchResume(resumeId);
+        const data = await fetchResume(tenant, resumeId);
 
         // Get processing status
         const status = (data.raw_resume?.processing_status || 'pending') as ProcessingStatus;
@@ -67,6 +68,7 @@ export default function ResumeViewerPage() {
 
         // Capture title for editable display (always set to clear stale state)
         setResumeTitle(data.title ?? null);
+        setIsMasterResume(data.is_master);
 
         // Prioritize processed_resume if available (structured JSON)
         if (data.processed_resume) {
@@ -96,8 +98,7 @@ export default function ResumeViewerPage() {
     };
 
     loadResume();
-    setIsMasterResume(localStorage.getItem('master_resume_id') === resumeId);
-  }, [resumeId, t]);
+  }, [resumeId, t, tenant]);
 
   const handleRetryProcessing = async () => {
     if (!resumeId) return;
@@ -119,7 +120,7 @@ export default function ResumeViewerPage() {
   };
 
   const handleEdit = () => {
-    router.push(`/builder?id=${resumeId}`);
+    router.push(tenantPath(tenant, `/builder?id=${resumeId}`));
   };
 
   const handleTitleSave = async () => {
@@ -148,7 +149,7 @@ export default function ResumeViewerPage() {
   // Reload resume data after enrichment
   const reloadResumeData = async () => {
     try {
-      const data = await fetchResume(resumeId);
+      const data = await fetchResume(tenant, resumeId);
       if (data.processed_resume) {
         setResumeData(data.processed_resume as ResumeData);
         setError(null);
@@ -166,14 +167,14 @@ export default function ResumeViewerPage() {
   const handleDownload = async () => {
     setIsDownloading(true);
     try {
-      const blob = await downloadResumePdf(resumeId, undefined, uiLanguage);
+      const blob = await downloadResumePdf(resumeId, undefined, tenant);
       const filename = sanitizeFilename(resumeTitle, resumeId, 'resume');
       downloadBlobAsFile(blob, filename);
       setShowDownloadSuccessDialog(true);
     } catch (err) {
       console.error('Failed to download resume:', err);
       if (err instanceof TypeError && err.message.includes('Failed to fetch')) {
-        const fallbackUrl = getResumePdfUrl(resumeId, undefined, uiLanguage);
+        const fallbackUrl = getResumePdfUrl(resumeId, undefined, tenant);
         const didOpen = openUrlInNewTab(fallbackUrl);
         if (!didOpen) {
           alert(t('common.popupBlocked', { url: fallbackUrl }));
@@ -192,7 +193,6 @@ export default function ResumeViewerPage() {
       // Update cached counters
       decrementResumes();
       if (isMasterResume) {
-        localStorage.removeItem('master_resume_id');
         setHasMasterResume(false);
       }
       setShowDeleteDialog(false);
@@ -206,7 +206,7 @@ export default function ResumeViewerPage() {
 
   const handleDeleteSuccessConfirm = () => {
     setShowDeleteSuccessDialog(false);
-    router.push('/dashboard');
+    router.push(tenantPath(tenant, '/dashboard'));
   };
 
   const handleDownloadSuccessConfirm = () => {
@@ -273,7 +273,7 @@ export default function ResumeViewerPage() {
                 </Button>
               </>
             )}
-            <Button variant="outline" onClick={() => router.push('/dashboard')}>
+            <Button variant="outline" onClick={() => router.push(tenantPath(tenant, '/dashboard'))}>
               {t('resumeViewer.returnToDashboard')}
             </Button>
           </div>
@@ -287,7 +287,7 @@ export default function ResumeViewerPage() {
       <div className="max-w-7xl mx-auto">
         {/* Header Actions */}
         <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 no-print">
-          <Button variant="outline" onClick={() => router.push('/dashboard')}>
+          <Button variant="outline" onClick={() => router.push(tenantPath(tenant, '/dashboard'))}>
             <ArrowLeft className="w-4 h-4" />
             {t('nav.backToDashboard')}
           </Button>

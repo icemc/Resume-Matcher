@@ -47,6 +47,11 @@
     "goToSettings": "Accéder aux paramètres",
     "applicationTracker": "Suivi des candidatures"
   },
+  "tenantSwitcher": {
+    "label": "Langue",
+    "configured": "Configuré",
+    "setUp": "Pas encore configuré"
+  },
   "dashboard": {
     "title": "Tableau de bord",
     "subtitle": "Gérez vos CV et candidatures",
@@ -592,8 +597,6 @@
     "apiKey": "Clé API",
     "apiKeyPlaceholder": "Saisissez votre clé API",
     "saveApiKey": "Enregistrer la clé API",
-    "contentLanguage": "Langue du contenu",
-    "contentLanguageDescription": "Langue pour le contenu généré (CV, lettres de motivation)",
     "uiLanguage": "Langue de l'interface",
     "uiLanguageDescription": "Langue pour l'interface utilisateur",
     "theme": "Thème",

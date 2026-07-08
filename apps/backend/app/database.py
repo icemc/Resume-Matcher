@@ -127,6 +127,7 @@ class Database:
             "cover_letter": row.cover_letter,
             "outreach_message": row.outreach_message,
             "title": row.title,
+            "language": row.language,
             "created_at": row.created_at,
             "updated_at": row.updated_at,
         }
@@ -141,6 +142,7 @@ class Database:
             "job_id": row.job_id,
             "content": row.content,
             "resume_id": row.resume_id,
+            "language": row.language,
             "created_at": row.created_at,
         }
         meta = row.metadata_json or {}
@@ -172,6 +174,7 @@ class Database:
             "applied_at": row.applied_at,
             "notes": row.notes,
             "position": row.position,
+            "language": row.language,
             "created_at": row.created_at,
             "updated_at": row.updated_at,
         }
@@ -181,6 +184,7 @@ class Database:
     async def create_resume(
         self,
         content: str,
+        language: str,
         content_type: str = "md",
         filename: str | None = None,
         is_master: bool = False,
@@ -213,6 +217,7 @@ class Database:
                     outreach_message=outreach_message,
                     title=title,
                     original_markdown=original_markdown,
+                    language=language,
                     created_at=now,
                     updated_at=now,
                 )
@@ -231,6 +236,7 @@ class Database:
             "cover_letter": cover_letter,
             "outreach_message": outreach_message,
             "title": title,
+            "language": language,
             "created_at": now,
             "updated_at": now,
         }
@@ -241,6 +247,7 @@ class Database:
     async def create_resume_atomic_master(
         self,
         content: str,
+        language: str,
         content_type: str = "md",
         filename: str | None = None,
         processed_data: dict[str, Any] | None = None,
@@ -250,13 +257,16 @@ class Database:
         original_markdown: str | None = None,
         title: str | None = None,
     ) -> dict[str, Any]:
-        """Create a new resume with atomic master assignment.
+        """Create a new resume with atomic master assignment (per-tenant).
 
         Uses an asyncio.Lock to prevent race conditions when multiple uploads
-        happen concurrently and both try to become master.
+        happen concurrently and both try to become master of the same tenant
+        (``language``). The lock is global across tenants (see plan close call
+        B) — master promotion is rare and human-paced, so cross-tenant
+        serialization costs nothing meaningful.
         """
         async with self._master_resume_lock:
-            current_master = await self.get_master_resume()
+            current_master = await self.get_master_resume(language=language)
             is_master = current_master is None
 
             # Recovery: if the current master is stuck failed/processing, demote
@@ -274,6 +284,7 @@ class Database:
 
             return await self.create_resume(
                 content=content,
+                language=language,
                 content_type=content_type,
                 filename=filename,
                 is_master=is_master,
@@ -291,11 +302,13 @@ class Database:
             row = await session.get(Resume, resume_id)
             return self._resume_to_dict(row) if row else None
 
-    async def get_master_resume(self) -> dict[str, Any] | None:
-        """Get the master resume if exists."""
+    async def get_master_resume(self, language: str) -> dict[str, Any] | None:
+        """Get the master resume for a tenant (language) if it exists."""
         async with self._session() as session:
             result = await session.execute(
-                select(Resume).where(Resume.is_master.is_(True))
+                select(Resume).where(
+                    Resume.is_master.is_(True), Resume.language == language
+                )
             )
             row = result.scalars().first()
             return self._resume_to_dict(row) if row else None
@@ -329,26 +342,41 @@ class Database:
             await session.commit()
             return True
 
-    async def list_resumes(self) -> list[dict[str, Any]]:
-        """List all resumes."""
+    async def list_resumes(self, language: str) -> list[dict[str, Any]]:
+        """List all resumes for a tenant (language)."""
         async with self._session() as session:
-            result = await session.execute(select(Resume).order_by(Resume.created_at))
+            result = await session.execute(
+                select(Resume)
+                .where(Resume.language == language)
+                .order_by(Resume.created_at)
+            )
             return [self._resume_to_dict(row) for row in result.scalars().all()]
 
-    async def set_master_resume(self, resume_id: str) -> bool:
-        """Set a resume as the master, unsetting any existing master.
+    async def list_configured_languages(self) -> list[str]:
+        """Return the distinct languages that have at least one resume."""
+        async with self._session() as session:
+            result = await session.execute(
+                select(Resume.language).distinct().order_by(Resume.language)
+            )
+            return [row[0] for row in result.all()]
 
-        Returns False if the resume doesn't exist. Demote-then-promote happens
-        in a single transaction so the partial unique index is never violated.
+    async def set_master_resume(self, resume_id: str, language: str) -> bool:
+        """Set a resume as the master of its tenant, unsetting any existing master.
+
+        Returns False if the resume doesn't exist or belongs to a different
+        tenant. Demote-then-promote happens in a single transaction so the
+        partial unique index is never violated.
         """
         async with self._session() as session:
             target = await session.get(Resume, resume_id)
-            if target is None:
+            if target is None or target.language != language:
                 logger.warning("Cannot set master: resume %s not found", resume_id)
                 return False
 
             current = await session.execute(
-                select(Resume).where(Resume.is_master.is_(True))
+                select(Resume).where(
+                    Resume.is_master.is_(True), Resume.language == language
+                )
             )
             for row in current.scalars().all():
                 if row.resume_id != resume_id:
@@ -361,19 +389,29 @@ class Database:
 
     # -- Job operations -----------------------------------------------------
 
-    async def create_job(self, content: str, resume_id: str | None = None) -> dict[str, Any]:
+    async def create_job(
+        self, content: str, language: str, resume_id: str | None = None
+    ) -> dict[str, Any]:
         """Create a new job description entry."""
         job_id = str(uuid4())
         now = _now()
         async with self._session() as session:
             session.add(
-                Job(job_id=job_id, content=content, resume_id=resume_id, created_at=now, metadata_json={})
+                Job(
+                    job_id=job_id,
+                    content=content,
+                    resume_id=resume_id,
+                    language=language,
+                    created_at=now,
+                    metadata_json={},
+                )
             )
             await session.commit()
         return {
             "job_id": job_id,
             "content": content,
             "resume_id": resume_id,
+            "language": language,
             "created_at": now,
         }
 
@@ -466,19 +504,21 @@ class Database:
 
     # -- Application (tracker) operations -----------------------------------
 
-    async def _next_position(self, session: AsyncSession, status: str) -> int:
+    async def _next_position(
+        self, session: AsyncSession, status: str, language: str
+    ) -> int:
         result = await session.execute(
             select(func.count())
             .select_from(Application)
-            .where(Application.status == status)
+            .where(Application.status == status, Application.language == language)
         )
         return int(result.scalar() or 0)
 
-    async def _renumber(self, session: AsyncSession, status: str) -> None:
-        """Renumber a column's positions to a contiguous 0..n-1 sequence."""
+    async def _renumber(self, session: AsyncSession, status: str, language: str) -> None:
+        """Renumber a tenant's column positions to a contiguous 0..n-1 sequence."""
         result = await session.execute(
             select(Application)
-            .where(Application.status == status)
+            .where(Application.status == status, Application.language == language)
             .order_by(Application.position, Application.created_at)
         )
         for index, row in enumerate(result.scalars().all()):
@@ -489,6 +529,7 @@ class Database:
         self,
         job_id: str,
         resume_id: str,
+        language: str,
         master_resume_id: str | None = None,
         status: str = "applied",
         company: str | None = None,
@@ -514,7 +555,7 @@ class Database:
             now = _now()
             if applied_at is None and status != "saved":
                 applied_at = now
-            position = await self._next_position(session, status)
+            position = await self._next_position(session, status, language)
             row = Application(
                 application_id=str(uuid4()),
                 job_id=job_id,
@@ -526,6 +567,7 @@ class Database:
                 applied_at=applied_at,
                 notes=notes,
                 position=position,
+                language=language,
                 created_at=now,
                 updated_at=now,
             )
@@ -553,10 +595,12 @@ class Database:
                 raise
             return self._application_to_dict(row)
 
-    async def list_applications(self, status: str | None = None) -> list[dict[str, Any]]:
-        """List applications ordered by (status, position)."""
+    async def list_applications(
+        self, language: str, status: str | None = None
+    ) -> list[dict[str, Any]]:
+        """List a tenant's applications ordered by (status, position)."""
         async with self._session() as session:
-            stmt = select(Application)
+            stmt = select(Application).where(Application.language == language)
             if status is not None:
                 stmt = stmt.where(Application.status == status)
             stmt = stmt.order_by(Application.status, Application.position)
@@ -598,12 +642,13 @@ class Database:
                 row.position = 10_000_000
                 await session.flush()
                 if old_status != new_status:
-                    await self._renumber(session, old_status)
+                    await self._renumber(session, old_status, row.language)
                 # Renumber the target column excluding this row, then splice in.
                 siblings = await session.execute(
                     select(Application)
                     .where(
                         Application.status == new_status,
+                        Application.language == row.language,
                         Application.application_id != application_id,
                     )
                     .order_by(Application.position, Application.created_at)
@@ -627,20 +672,24 @@ class Database:
         """Move many applications to the end of ``status``. Returns count moved."""
         moved = 0
         async with self._session() as session:
-            affected_old: set[str] = set()
+            affected_old: set[tuple[str, str]] = set()
+            affected_new: set[str] = set()
             for application_id in application_ids:
                 row = await session.get(Application, application_id)
                 if row is None:
                     continue
-                affected_old.add(row.status)
+                affected_old.add((row.status, row.language))
+                affected_new.add(row.language)
                 row.status = status
                 row.position = 20_000_000 + moved  # provisional, renumbered below
                 row.updated_at = _now()
                 moved += 1
             await session.flush()
-            for old_status in affected_old - {status}:
-                await self._renumber(session, old_status)
-            await self._renumber(session, status)
+            for old_status, old_language in affected_old:
+                if not (old_status == status and old_language in affected_new):
+                    await self._renumber(session, old_status, old_language)
+            for language in affected_new:
+                await self._renumber(session, status, language)
             await session.commit()
         return moved
 
@@ -651,9 +700,10 @@ class Database:
             if row is None:
                 return False
             status = row.status
+            language = row.language
             await session.delete(row)
             await session.flush()
-            await self._renumber(session, status)
+            await self._renumber(session, status, language)
             await session.commit()
             return True
 
@@ -661,17 +711,17 @@ class Database:
         """Delete many applications; renumber affected columns. Returns count."""
         deleted = 0
         async with self._session() as session:
-            affected: set[str] = set()
+            affected: set[tuple[str, str]] = set()
             for application_id in application_ids:
                 row = await session.get(Application, application_id)
                 if row is None:
                     continue
-                affected.add(row.status)
+                affected.add((row.status, row.language))
                 await session.delete(row)
                 deleted += 1
             await session.flush()
-            for status in affected:
-                await self._renumber(session, status)
+            for status, language in affected:
+                await self._renumber(session, status, language)
             await session.commit()
         return deleted
 

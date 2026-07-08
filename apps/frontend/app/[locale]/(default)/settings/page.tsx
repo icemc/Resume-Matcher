@@ -61,9 +61,11 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { useLanguage } from '@/lib/context/language-context';
+import { useTenant } from '@/lib/context/tenant-context';
+import { tenantPath } from '@/lib/utils/tenant-paths';
+import { tenantStorageKey } from '@/lib/utils/tenant-storage-key';
 import { useTranslations } from '@/lib/i18n';
-import type { SupportedLanguage } from '@/lib/api/config';
-import type { Locale } from '@/i18n/config';
+import { locales, type Locale } from '@/i18n/config';
 
 type Status = 'idle' | 'loading' | 'saving' | 'saved' | 'error' | 'testing';
 
@@ -170,15 +172,8 @@ export default function SettingsPage() {
   const [isResetting, setIsResetting] = useState(false);
 
   // Language settings
-  const {
-    contentLanguage,
-    uiLanguage,
-    setContentLanguage,
-    setUiLanguage,
-    languageNames,
-    supportedLanguages,
-    isLoading: languageLoading,
-  } = useLanguage();
+  const { uiLanguage, setUiLanguage, languageNames, supportedLanguages } = useLanguage();
+  const tenant = useTenant();
 
   // Translations
   const { t } = useTranslations();
@@ -587,11 +582,14 @@ export default function SettingsPage() {
     try {
       await resetDatabase();
 
-      // Clear all related localStorage keys
-      localStorage.removeItem('master_resume_id');
-      localStorage.removeItem('resume_builder_draft');
-      localStorage.removeItem('resume_builder_settings');
-      localStorage.removeItem('resume_matcher_content_language');
+      // Clear all related localStorage keys. Draft/settings keys are
+      // tenant-scoped, so every tenant's copy must be cleared, not just the
+      // current one.
+      for (const tenantLocale of locales) {
+        localStorage.removeItem(tenantStorageKey(tenantLocale, 'resume_builder_draft'));
+        localStorage.removeItem(tenantStorageKey(tenantLocale, 'resume_builder_settings'));
+        localStorage.removeItem(tenantStorageKey(tenantLocale, 'resume_wizard_draft'));
+      }
       localStorage.removeItem('resume_matcher_ui_language');
 
       // Refresh status to show empty counts
@@ -640,7 +638,7 @@ export default function SettingsPage() {
               {t('settings.subtitle')}
             </p>
           </div>
-          <Link href="/dashboard">
+          <Link href={tenantPath(tenant, '/dashboard')}>
             <Button variant="outline" size="sm">
               <ArrowLeft className="w-4 h-4" />
               {t('common.back')}
@@ -1257,16 +1255,13 @@ export default function SettingsPage() {
             <div className="flex items-center gap-2 border-b border-black/10 pb-2">
               <Globe className="w-4 h-4" />
               <h2 className="font-mono text-sm font-bold uppercase tracking-wider">
-                {t('settings.uiLanguage')} & {t('settings.contentLanguage')}
+                {t('settings.uiLanguage')}
               </h2>
             </div>
 
             {/* UI Language */}
             <div className="space-y-4">
               <div>
-                <h3 className="font-mono text-xs font-bold uppercase tracking-wider text-ink-soft mb-2">
-                  {t('settings.uiLanguage')}
-                </h3>
                 <p className="text-sm text-ink-soft mb-3">{t('settings.uiLanguageDescription')}</p>
               </div>
 
@@ -1276,35 +1271,7 @@ export default function SettingsPage() {
                     <button
                       key={`ui-${lang}`}
                       onClick={() => setUiLanguage(lang as Locale)}
-                      disabled={languageLoading}
                       className={`px-4 py-3 text-sm ${SEGMENTED_BUTTON_BASE} ${uiLanguage === lang ? SEGMENTED_BUTTON_ACTIVE : SEGMENTED_BUTTON_INACTIVE}`}
-                    >
-                      {languageNames[lang]}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Content Language */}
-            <div className="space-y-4 pt-4 border-t border-paper-tint">
-              <div>
-                <h3 className="font-mono text-xs font-bold uppercase tracking-wider text-ink-soft mb-2">
-                  {t('settings.contentLanguage')}
-                </h3>
-                <p className="text-sm text-ink-soft mb-3">
-                  {t('settings.contentLanguageDescription')}
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                  {supportedLanguages.map((lang) => (
-                    <button
-                      key={`content-${lang}`}
-                      onClick={() => setContentLanguage(lang as SupportedLanguage)}
-                      disabled={languageLoading}
-                      className={`px-4 py-3 text-sm ${SEGMENTED_BUTTON_BASE} ${contentLanguage === lang ? SEGMENTED_BUTTON_ACTIVE : SEGMENTED_BUTTON_INACTIVE}`}
                     >
                       {languageNames[lang]}
                     </button>

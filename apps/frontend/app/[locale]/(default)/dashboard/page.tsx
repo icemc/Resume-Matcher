@@ -28,11 +28,14 @@ import {
   type ResumeListItem,
 } from '@/lib/api/resume';
 import { useStatusCache } from '@/lib/context/status-cache';
+import { useTenant } from '@/lib/context/tenant-context';
+import { tenantPath } from '@/lib/utils/tenant-paths';
 
 type ProcessingStatus = 'pending' | 'processing' | 'ready' | 'failed' | 'loading';
 
 export default function DashboardPage() {
   const { t, locale } = useTranslations();
+  const tenant = useTenant();
   const [masterResumeId, setMasterResumeId] = useState<string | null>(null);
   const [processingStatus, setProcessingStatus] = useState<ProcessingStatus>('loading');
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -77,46 +80,34 @@ export default function DashboardPage() {
     });
   };
 
-  const checkResumeStatus = useCallback(async (resumeId: string) => {
-    try {
-      setProcessingStatus('loading');
-      const data = await fetchResume(resumeId);
-      const status = data.raw_resume?.processing_status || 'pending';
-      setProcessingStatus(status as ProcessingStatus);
-    } catch (err: unknown) {
-      console.error('Failed to check resume status:', err);
-      // If resume not found (404), clear the stale localStorage
-      if (err instanceof Error && err.message.includes('404')) {
-        localStorage.removeItem('master_resume_id');
-        setMasterResumeId(null);
-        return;
+  const checkResumeStatus = useCallback(
+    async (resumeId: string) => {
+      try {
+        setProcessingStatus('loading');
+        const data = await fetchResume(tenant, resumeId);
+        const status = data.raw_resume?.processing_status || 'pending';
+        setProcessingStatus(status as ProcessingStatus);
+      } catch (err: unknown) {
+        console.error('Failed to check resume status:', err);
+        if (err instanceof Error && err.message.includes('404')) {
+          setMasterResumeId(null);
+          return;
+        }
+        setProcessingStatus('failed');
       }
-      setProcessingStatus('failed');
-    }
-  }, []);
-
-  useEffect(() => {
-    const storedId = localStorage.getItem('master_resume_id');
-    if (storedId) {
-      setMasterResumeId(storedId);
-      checkResumeStatus(storedId);
-    }
-  }, [checkResumeStatus]);
+    },
+    [tenant]
+  );
 
   const loadTailoredResumes = useCallback(async () => {
     try {
-      const data = await fetchResumeList(true);
+      const data = await fetchResumeList(tenant, true);
       const masterFromList = data.find((r) => r.is_master);
-      const storedId = localStorage.getItem('master_resume_id');
-      const resolvedMasterId = masterFromList?.resume_id || storedId;
+      const resolvedMasterId = masterFromList?.resume_id ?? null;
 
+      setMasterResumeId(resolvedMasterId);
       if (resolvedMasterId) {
-        localStorage.setItem('master_resume_id', resolvedMasterId);
-        setMasterResumeId(resolvedMasterId);
         checkResumeStatus(resolvedMasterId);
-      } else {
-        localStorage.removeItem('master_resume_id');
-        setMasterResumeId(null);
       }
 
       const filtered = data.filter((r) => r.resume_id !== resolvedMasterId);
@@ -162,7 +153,7 @@ export default function DashboardPage() {
     } catch (err) {
       console.error('Failed to load tailored resumes:', err);
     }
-  }, [checkResumeStatus]);
+  }, [checkResumeStatus, tenant]);
 
   useEffect(() => {
     loadTailoredResumes();
@@ -178,7 +169,6 @@ export default function DashboardPage() {
   }, [loadTailoredResumes, checkResumeStatus]);
 
   const handleUploadComplete = (resumeId: string) => {
-    localStorage.setItem('master_resume_id', resumeId);
     setMasterResumeId(resumeId);
     // Check status after upload completes
     checkResumeStatus(resumeId);
@@ -194,7 +184,7 @@ export default function DashboardPage() {
 
   const handleChooseWizard = () => {
     setIsMasterChoiceDialogOpen(false);
-    router.push('/resume-wizard');
+    router.push(tenantPath(tenant, '/resume-wizard'));
   };
 
   const handleInitializeMasterKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
@@ -239,7 +229,6 @@ export default function DashboardPage() {
       await deleteResume(masterResumeId);
       decrementResumes();
       setHasMasterResume(false);
-      localStorage.removeItem('master_resume_id');
       setMasterResumeId(null);
       setProcessingStatus('loading');
       setIsUploadDialogOpen(true);
@@ -328,7 +317,7 @@ export default function DashboardPage() {
               </p>
             </div>
           </div>
-          <Link href="/settings">
+          <Link href={tenantPath(tenant, '/settings')}>
             <Button variant="outline" size="sm" className="border-warning text-amber-700">
               <Settings className="w-4 h-4 mr-2" />
               {t('nav.settings')}
@@ -342,7 +331,7 @@ export default function DashboardPage() {
         {!masterResumeId ? (
           // LLM Not Configured or Upload State
           !isLlmConfigured && !statusLoading ? (
-            <Link href="/settings" className="block h-full">
+            <Link href={tenantPath(tenant, '/settings')} className="block h-full">
               <Card
                 variant="interactive"
                 className="aspect-square h-full border-dashed border-warning bg-amber-50"
@@ -415,7 +404,7 @@ export default function DashboardPage() {
           <Card
             variant="interactive"
             className="aspect-square h-full"
-            onClick={() => router.push(`/resumes/${masterResumeId}`)}
+            onClick={() => router.push(tenantPath(tenant, `/resumes/${masterResumeId}`))}
           >
             <div className="flex-1 flex flex-col h-full">
               <div className="flex justify-between items-start mb-6">
@@ -494,7 +483,7 @@ export default function DashboardPage() {
               key={resume.resume_id}
               variant="interactive"
               className="aspect-square h-full bg-canvas"
-              onClick={() => router.push(`/resumes/${resume.resume_id}`)}
+              onClick={() => router.push(tenantPath(tenant, `/resumes/${resume.resume_id}`))}
             >
               <div className="flex-1 flex flex-col">
                 <div className="flex justify-between items-start mb-6">
@@ -527,7 +516,7 @@ export default function DashboardPage() {
         <Card className="aspect-square h-full" variant="default">
           <div className="flex-1 flex flex-col items-center justify-center text-center h-full">
             <Button
-              onClick={() => router.push('/tailor')}
+              onClick={() => router.push(tenantPath(tenant, '/tailor'))}
               disabled={!isTailorEnabled}
               className="w-20 h-20 bg-blue-700 text-white border-2 border-black shadow-sw-default hover:bg-blue-800 hover:translate-y-[2px] hover:translate-x-[2px] hover:shadow-none transition-all rounded-none"
             >

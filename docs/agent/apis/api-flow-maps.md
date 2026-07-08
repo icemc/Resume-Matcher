@@ -6,9 +6,10 @@
 
 ```
 POST /api/v1/resumes/upload
+├── validate_tenant_language(language)          # 400 if unsupported — language is a required Form field
 ├── Validate file (PDF/DOCX, ≤4MB)
 ├── parse_document() → Markdown
-├── db.create_resume(status="processing")
+├── db.create_resume_atomic_master(language, status="processing")   # one master per tenant
 ├── parse_resume_to_json() → LLM
 │   ├── Success: status="ready"
 │   └── Failure: status="failed"
@@ -87,25 +88,30 @@ DELETE /api/v1/config/api-keys?confirm=...     # clear all keys
 
 ```
 POST /api/v1/jobs/upload
+├── validate_tenant_language(language)          # 400 if unsupported — language is a required body field
 ├── For each description:
-│   └── db.create_job()
+│   └── db.create_job(language)
 └── Return {job_id[]}
 ```
 
 ## Resume Operations
 
+Every language is its own tenant (see [i18n.md](../features/i18n.md)). `GET /resumes` and `GET /resumes/list` require a `language` query param (`db.list_resumes(language=...)`); a resume whose `language` doesn't match the requested tenant 404s (not 403 — avoids leaking existence).
+
 | Endpoint | Flow |
 |----------|------|
-| `GET /resumes?id=` | db.get_resume() |
-| `GET /resumes/list` | db.list_resumes() |
+| `GET /resumes?resume_id=&language=` | db.get_resume() + tenant check |
+| `GET /resumes/list?language=` | db.list_resumes(language) |
+| `GET /resumes/configured-languages` | db.list_configured_languages() — NOT tenant-scoped; feeds the tenant switcher |
 | `PATCH /resumes/{id}` | db.update_resume() |
 | `DELETE /resumes/{id}` | db.delete_resume() |
 
 ## Application Tracker
 
 ```
-GET /api/v1/applications
-├── db.list_applications()
+GET /api/v1/applications?language=
+├── validate_tenant_language(language)          # 400 if unsupported
+├── db.list_applications(language)
 └── Return {columns}        # grouped by the 7 status keys (all present):
                             #   saved/applied/no_response/response/interview/accepted/rejected
 

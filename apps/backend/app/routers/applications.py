@@ -3,9 +3,10 @@
 import logging
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 
 from app.database import db
+from app.routers._tenant import validate_tenant_language
 from app.services.improver import extract_job_keywords
 from app.schemas import (
     APPLICATION_STATUS_ORDER,
@@ -42,10 +43,11 @@ def _group_by_status(applications: list[dict[str, Any]]) -> dict[str, list[Appli
 
 
 @router.get("", response_model=ApplicationListResponse)
-async def list_applications() -> ApplicationListResponse:
-    """List all applications grouped by status column."""
+async def list_applications(language: str = Query(...)) -> ApplicationListResponse:
+    """List a tenant's applications grouped by status column."""
+    language = validate_tenant_language(language)
     try:
-        applications = await db.list_applications()
+        applications = await db.list_applications(language=language)
     except Exception as e:
         logger.error("Failed to list applications: %s", e)
         raise HTTPException(status_code=500, detail="Failed to load applications. Please try again.")
@@ -61,7 +63,10 @@ async def create_application(request: ManualApplicationCreate) -> ApplicationRes
     just-created job is cleaned up (no orphan jobs / retry drift); caching
     company/role on the job is best-effort and never fails the request.
     """
-    job = await db.create_job(content=request.job_description, resume_id=request.resume_id)
+    language = validate_tenant_language(request.language)
+    job = await db.create_job(
+        content=request.job_description, language=language, resume_id=request.resume_id
+    )
 
     company = request.company
     role = request.role
@@ -74,6 +79,7 @@ async def create_application(request: ManualApplicationCreate) -> ApplicationRes
         application = await db.create_application(
             job_id=job["job_id"],
             resume_id=request.resume_id,
+            language=language,
             status=request.status.value,
             company=company,
             role=role,

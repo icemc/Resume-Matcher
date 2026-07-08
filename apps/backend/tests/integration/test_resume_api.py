@@ -31,6 +31,7 @@ def mock_resume_record(sample_resume):
         "outreach_message": None,
         "title": None,
         "original_markdown": "# Jane Doe\nSenior Backend Engineer",
+        "language": "en",
         "created_at": "2026-01-01T00:00:00Z",
         "updated_at": "2026-01-01T00:00:00Z",
     }
@@ -43,7 +44,7 @@ class TestGetResume:
     async def test_fetch_existing_resume(self, mock_db, client, mock_resume_record):
         mock_db.get_resume.return_value = mock_resume_record
         async with client:
-            resp = await client.get("/api/v1/resumes", params={"resume_id": "res-123"})
+            resp = await client.get("/api/v1/resumes", params={"resume_id": "res-123", "language": "en"})
         assert resp.status_code == 200
         data = resp.json()["data"]
         assert data["resume_id"] == "res-123"
@@ -54,7 +55,9 @@ class TestGetResume:
     async def test_fetch_nonexistent_returns_404(self, mock_db, client):
         mock_db.get_resume.return_value = None
         async with client:
-            resp = await client.get("/api/v1/resumes", params={"resume_id": "nonexistent"})
+            resp = await client.get(
+                "/api/v1/resumes", params={"resume_id": "nonexistent", "language": "en"}
+            )
         assert resp.status_code == 404
 
 
@@ -68,7 +71,7 @@ class TestListResumes:
             {"resume_id": "tailored-1", "is_master": False, "created_at": "2026-01-02", "updated_at": "2026-01-02"},
         ]
         async with client:
-            resp = await client.get("/api/v1/resumes/list")
+            resp = await client.get("/api/v1/resumes/list", params={"language": "en"})
         assert resp.status_code == 200
         data = resp.json()["data"]
         assert len(data) == 1
@@ -81,7 +84,9 @@ class TestListResumes:
             {"resume_id": "tailored-1", "is_master": False, "created_at": "2026-01-02", "updated_at": "2026-01-02"},
         ]
         async with client:
-            resp = await client.get("/api/v1/resumes/list", params={"include_master": True})
+            resp = await client.get(
+                "/api/v1/resumes/list", params={"include_master": True, "language": "en"}
+            )
         assert resp.status_code == 200
         data = resp.json()["data"]
         assert len(data) == 2

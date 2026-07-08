@@ -101,7 +101,7 @@ async def test_finalize_creates_ready_master_resume(isolated_db) -> None:
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         response = await client.post(
             "/api/v1/resume-wizard/finalize",
-            json={"state": state.model_dump(mode="json")},
+            json={"state": state.model_dump(mode="json"), "language": "en"},
         )
 
     assert response.status_code == 200
@@ -119,6 +119,7 @@ async def test_finalize_creates_ready_master_resume(isolated_db) -> None:
 async def test_finalize_rejects_when_master_exists(isolated_db, sample_resume) -> None:
     await isolated_db.create_resume(
         content=json.dumps(sample_resume),
+        language="en",
         content_type="json",
         filename="existing.json",
         is_master=True,
@@ -132,7 +133,7 @@ async def test_finalize_rejects_when_master_exists(isolated_db, sample_resume) -
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         response = await client.post(
             "/api/v1/resume-wizard/finalize",
-            json={"state": state.model_dump(mode="json")},
+            json={"state": state.model_dump(mode="json"), "language": "en"},
         )
 
     assert response.status_code == 409

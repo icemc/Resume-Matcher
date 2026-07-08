@@ -9,7 +9,6 @@ from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException
 
-from app.config_cache import get_content_language
 from app.database import db
 from app.llm import complete_json
 from app.prompts.enrichment import (
@@ -106,7 +105,7 @@ async def analyze_resume(resume_id: str) -> AnalysisResponse:
 
     # Build prompt with content language
     resume_json = json.dumps(processed_data)
-    language = get_content_language()
+    language = resume["language"]
     output_language = get_language_name(language)
     prompt = ANALYZE_RESUME_PROMPT.format(
         resume_json=resume_json,
@@ -212,7 +211,7 @@ async def generate_enhancements(request: EnhanceRequest) -> EnhancementPreview:
     else:
         # Legacy path — re-analyze to get question-to-item mapping
         resume_json = json.dumps(processed_data)
-        language = get_content_language()
+        language = resume["language"]
         output_language = get_language_name(language)
         analysis_prompt = ANALYZE_RESUME_PROMPT.format(
             resume_json=resume_json,
@@ -284,8 +283,8 @@ async def generate_enhancements(request: EnhanceRequest) -> EnhancementPreview:
         # Build enhancement prompt with content language
         current_desc = item.get("current_description", [])
         current_desc_text = "\n".join(f"- {d}" for d in current_desc) if current_desc else "(No description)"
-        
-        language = get_content_language()
+
+        language = resume["language"]
         output_language = get_language_name(language)
 
         prompt = ENHANCE_DESCRIPTION_PROMPT.format(

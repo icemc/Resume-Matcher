@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { useStatusCache } from '@/lib/context/status-cache';
+import { useTenant } from '@/lib/context/tenant-context';
+import { tenantPath } from '@/lib/utils/tenant-paths';
+import { tenantStorageKey } from '@/lib/utils/tenant-storage-key';
 import { useTranslations } from '@/lib/i18n';
 import {
   createInitialResumeWizardState,
@@ -15,8 +18,7 @@ import {
 import { LivePreview } from './live-preview';
 import { QuestionCard } from './question-card';
 
-const DRAFT_STORAGE_KEY = 'resume_wizard_draft';
-const MASTER_RESUME_KEY = 'master_resume_id';
+const BASE_DRAFT_STORAGE_KEY = 'resume_wizard_draft';
 const WIZARD_SECTIONS: ResumeWizardSection[] = [
   'intro',
   'contact',
@@ -112,9 +114,9 @@ function firstGapSection(data: ResumeWizardState['resume_data']): ResumeWizardSe
 }
 
 /** Validate a saved draft against the current shape; fall back to a fresh state. */
-function readSavedDraft(): ResumeWizardState | null {
+function readSavedDraft(storageKey: string): ResumeWizardState | null {
   try {
-    const saved = localStorage.getItem(DRAFT_STORAGE_KEY);
+    const saved = localStorage.getItem(storageKey);
     if (!saved) return null;
     const parsed = JSON.parse(saved) as unknown;
     if (!isRecord(parsed)) return null;
@@ -171,6 +173,8 @@ function readSavedDraft(): ResumeWizardState | null {
 
 export function ResumeWizardPage() {
   const { t } = useTranslations();
+  const tenant = useTenant();
+  const draftStorageKey = tenantStorageKey(tenant, BASE_DRAFT_STORAGE_KEY);
   const router = useRouter();
   const { incrementResumes, setHasMasterResume } = useStatusCache();
   const [state, setState] = useState<ResumeWizardState>(() => createInitialResumeWizardState());
@@ -180,20 +184,20 @@ export function ResumeWizardPage() {
   const [isBusy, setIsBusy] = useState(false);
 
   useEffect(() => {
-    const saved = readSavedDraft();
+    const saved = readSavedDraft(draftStorageKey);
     if (saved) setState(saved);
     setIsLoaded(true);
-  }, []);
+  }, [draftStorageKey]);
 
   useEffect(() => {
     if (!isLoaded || state.step === 'complete') return;
     try {
-      localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(state));
+      localStorage.setItem(draftStorageKey, JSON.stringify(state));
     } catch {
       // Draft persistence is a best-effort nicety; never let a quota/serialization
       // error (e.g. a large history) crash the wizard.
     }
-  }, [isLoaded, state]);
+  }, [isLoaded, state, draftStorageKey]);
 
   const sectionLabel = t(`resumeWizard.sections.${state.current_question.section}`);
 
@@ -242,16 +246,15 @@ export function ResumeWizardPage() {
     setErrorKey(null);
     setIsBusy(true);
     try {
-      const response = await finalizeResumeWizard(state);
+      const response = await finalizeResumeWizard(state, tenant);
       if (!response.resume_id) {
         throw new Error('Finalize returned no resume id');
       }
-      localStorage.setItem(MASTER_RESUME_KEY, response.resume_id);
-      localStorage.removeItem(DRAFT_STORAGE_KEY);
+      localStorage.removeItem(draftStorageKey);
       incrementResumes();
       setHasMasterResume(true);
       setState((current) => ({ ...current, step: 'complete' }));
-      router.push(`/builder?id=${response.resume_id}`);
+      router.push(tenantPath(tenant, `/builder?id=${response.resume_id}`));
     } catch {
       setErrorKey('resumeWizard.errors.finalizeFailed');
     } finally {
@@ -267,7 +270,11 @@ export function ResumeWizardPage() {
             <h1 className="font-mono text-xs font-bold uppercase tracking-wider text-steel-grey">
               {t('resumeWizard.title')}
             </h1>
-            <Button type="button" variant="ghost" onClick={() => router.push('/dashboard')}>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => router.push(tenantPath(tenant, '/dashboard'))}
+            >
               {t('resumeWizard.actions.backToDashboard')}
             </Button>
           </div>
