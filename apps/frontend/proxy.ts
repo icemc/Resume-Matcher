@@ -19,5 +19,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!api|print|_next|docs|redoc|openapi.json).*)'],
+  matcher: ['/((?!api|print|_next|docs|redoc|openapi\\.json|.*\\..*).*)'],
 };
