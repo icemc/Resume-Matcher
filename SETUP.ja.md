@@ -63,7 +63,7 @@ pip install uv
 
 ```bash
 # 1. リポジトリをクローン
-git clone https://github.com/srbhr/Resume-Matcher.git
+git clone https://github.com/icemc/Resume-Matcher.git
 cd Resume-Matcher
 
 # 2. バックエンド起動（ターミナル 1）
@@ -93,7 +93,7 @@ npm run dev                  # 開発サーバを起動
 まずはコードを取得します：
 
 ```bash
-git clone https://github.com/srbhr/Resume-Matcher.git
+git clone https://github.com/icemc/Resume-Matcher.git
 cd Resume-Matcher
 ```
 
@@ -371,7 +371,7 @@ npm run dev -- -p 3001
 
 ### データベース管理
 
-Resume Matcher は TinyDB（JSON ファイル保存）を使用します。データは `apps/backend/data/` にあります：
+Resume Matcher は SQLite（SQLAlchemy 2.0 async 経由）を使用します。データは `apps/backend/data/` にあります：
 
 ```bash
 # DB ファイルを見る
@@ -459,7 +459,7 @@ Resume-Matcher/
 │  │  ├─ app/
 │  │  │  ├─ main.py            # Application entry point
 │  │  │  ├─ config.py          # Environment configuration
-│  │  │  ├─ database.py        # TinyDB wrapper
+│  │  │  ├─ database.py        # SQLite（SQLAlchemy async）facade
 │  │  │  ├─ llm.py             # AI provider integration
 │  │  │  ├─ routers/           # API endpoints
 │  │  │  ├─ services/          # Business logic
@@ -487,8 +487,8 @@ Resume-Matcher/
 
 困ったときは次を参照してください：
 
-- **Discord:** [dsc.gg/resume-matcher](https://dsc.gg/resume-matcher) - 質問・議論に活発です
-- **GitHub Issues:** [Issue を作成](https://github.com/srbhr/Resume-Matcher/issues)（バグ報告や要望）
+- **GitHub Issues（この fork）:** [Issue を作成](https://github.com/icemc/Resume-Matcher/issues)（この fork 固有のバグ報告や要望）
+- **Discord（オリジナルプロジェクト）:** [dsc.gg/resume-matcher](https://dsc.gg/resume-matcher) - Resume Matcher 全般についての質問・議論に活発です
 - **ドキュメント:** 詳細は [docs/agent/](docs/agent/) を参照
 
 ### 参考ドキュメント
@@ -501,5 +501,5 @@ Resume-Matcher/
 
 ---
 
-楽しい履歴書づくりを！Resume Matcher が役立ったら、[リポジトリに Star](https://github.com/srbhr/Resume-Matcher) と [Discord 参加](https://dsc.gg/resume-matcher) をぜひ。
+楽しい履歴書づくりを！この fork が役立ったら、[リポジトリに Star](https://github.com/icemc/Resume-Matcher) をぜひ。Resume Matcher 全般が役立ったら、[オリジナルプロジェクトの Discord 参加](https://dsc.gg/resume-matcher) もおすすめです。
 

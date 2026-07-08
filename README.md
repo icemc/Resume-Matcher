@@ -4,13 +4,15 @@
 
 # Resume Matcher
 
-[𝙹𝚘𝚒𝚗 𝙳𝚒𝚜𝚌𝚘𝚛𝚍](https://dsc.gg/resume-matcher) ✦ [𝚆𝚎𝚋𝚜𝚒𝚝𝚎](https://resumematcher.fyi) ✦ [𝙷𝚘𝚠 𝚝𝚘 𝙸𝚗𝚜𝚝𝚊𝚕𝚕](https://resumematcher.fyi/docs/installation) ✦ [𝙲𝚘𝚗𝚝𝚛𝚒𝚋𝚞𝚝𝚘𝚛𝚜](#contributors) ✦ [𝚂𝚙𝚘𝚗𝚜𝚘𝚛](#sponsor-resume-matcher) ✦ [𝚃𝚠𝚒𝚝𝚝𝚎𝚛/𝚇](https://twitter.com/srbhrai) ✦ [𝙻𝚒𝚗𝚔𝚎𝚍𝙸𝚗](https://www.linkedin.com/company/resume-matcher/) ✦ [𝙲𝚛𝚎𝚊𝚝𝚘𝚛](https://srbhr.com)
+### *A multi-tenant fork of [Resume Matcher](https://github.com/srbhr/Resume-Matcher)*
 
-**English** | [Español](README.es.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md)
+[𝙶𝚒𝚝𝙷𝚞𝚋](https://github.com/icemc/Resume-Matcher) ✦ [𝙳𝚘𝚌𝚔𝚎𝚛 𝙷𝚞𝚋](https://hub.docker.com/r/abanda/resume-matcher) ✦ [𝙷𝚘𝚠 𝚝𝚘 𝙸𝚗𝚜𝚝𝚊𝚕𝚕](#how-to-install) ✦ [𝙸𝚜𝚜𝚞𝚎𝚜](https://github.com/icemc/Resume-Matcher/issues) ✦ [𝙾𝚛𝚒𝚐𝚒𝚗𝚊𝚕 𝙿𝚛𝚘𝚓𝚎𝚌𝚝](#original-project--attribution)
 
 Create tailored resumes for each job application with AI-powered suggestions. Works locally with Ollama or connect to your favorite LLM provider via API.
 
 ![Resume Matcher Demo](assets/Resume_Matcher_Demo_2.gif)
+
+*(core resume-tailoring flow, inherited from the original project)*
 
 </div>
 
@@ -18,20 +20,34 @@ Create tailored resumes for each job application with AI-powered suggestions. Wo
 
 <div align="center">
 
-![Stars](https://img.shields.io/github/stars/srbhr/Resume-Matcher?labelColor=F0F0E8&style=for-the-badge&color=1d4ed8)
-![Apache 2.0](https://img.shields.io/github/license/srbhr/Resume-Matcher?labelColor=F0F0E8&style=for-the-badge&color=1d4ed8) ![Forks](https://img.shields.io/github/forks/srbhr/Resume-Matcher?labelColor=F0F0E8&style=for-the-badge&color=1d4ed8) ![version](https://img.shields.io/badge/Version-1.2%20Nightvision%20-FFF?labelColor=F0F0E8&style=for-the-badge&color=1d4ed8)
+![Stars](https://img.shields.io/github/stars/icemc/Resume-Matcher?labelColor=F0F0E8&style=for-the-badge&color=1d4ed8)
+![Apache 2.0](https://img.shields.io/github/license/icemc/Resume-Matcher?labelColor=F0F0E8&style=for-the-badge&color=1d4ed8) ![Forks](https://img.shields.io/github/forks/icemc/Resume-Matcher?labelColor=F0F0E8&style=for-the-badge&color=1d4ed8) ![version](https://img.shields.io/badge/Version-1.2.1--RC1-FFF?labelColor=F0F0E8&style=for-the-badge&color=1d4ed8)
 
-[![Discord](https://img.shields.io/discord/1122069176962531400?labelColor=F0F0E8&logo=discord&logoColor=1d4ed8&style=for-the-badge&color=1d4ed8)](https://dsc.gg/resume-matcher) [![Website](https://img.shields.io/badge/website-Resume%20Matcher-FFF?labelColor=F0F0E8&style=for-the-badge&color=1d4ed8)](https://resumematcher.fyi) [![LinkedIn](https://img.shields.io/badge/LinkedIn-Resume%20Matcher-FFF?labelColor=F0F0E8&logo=LinkedIn&style=for-the-badge&color=1d4ed8)](https://www.linkedin.com/company/resume-matcher/)
-
-<a href="https://trendshift.io/repositories/565" target="_blank"><img src="https://trendshift.io/api/badge/repositories/565" alt="srbhr%2FResume-Matcher | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
-
-![Vercel OSS Program](https://vercel.com/oss/program-badge.svg)
+[![Docker Hub](https://img.shields.io/badge/Docker%20Hub-abanda%2Fresume--matcher-FFF?labelColor=F0F0E8&logo=docker&style=for-the-badge&color=1d4ed8)](https://hub.docker.com/r/abanda/resume-matcher)
 
 </div>
 
 > \[!IMPORTANT]
 >
-> This project is in active development. New features are being added continuously, and we welcome contributions from the community. If you have any suggestions or feature requests, please feel free to open an issue on GitHub or discuss it on our [Discord](https://dsc.gg/resume-matcher) server.
+> **This is an independent fork.** The core Resume Matcher product — the resume builder, AI tailoring, cover letters, scoring, and templates — was designed and built by **[Saurabh Rai](https://github.com/srbhr)** and the [original Resume Matcher](https://github.com/srbhr/Resume-Matcher) community. This fork exists to add a **multi-tenant, language-as-tenant architecture** on top of that work (see [What's New in This Fork](#whats-new-in-this-fork) below). It is not affiliated with, endorsed by, or maintained by the original team.
+>
+> For the **official website, live updates, Discord community, and sponsorship**, please go to the original project — see [Original Project & Attribution](#original-project--attribution).
+
+## What's New in This Fork
+
+Every supported language is now its own **tenant** — a fully isolated workspace with its own URL, its own master resume, its own tailored resumes, and its own Application Tracker board. Nothing is shared between tenants except one global UI-chrome language setting.
+
+| `/en/dashboard` | `/fr/dashboard` |
+|---|---|
+| ![English tenant dashboard](assets/en-multi-tenant.png) | ![French tenant dashboard](assets/fr-multi-tenant.png) |
+
+- **Per-language dashboards** at their own URL (`/en/dashboard`, `/fr/dashboard`, `/es/dashboard`, ...) for every supported language (English, Spanish, Chinese, Japanese, Portuguese, **French** — new in this fork).
+- **Full feature parity per tenant** — CV management, tailoring, cover letters, outreach, AI enrichment, and the tracker all work independently inside each language's own workspace.
+- **A tenant switcher** in the top nav shows which languages are already configured (have a master resume) versus not yet set up, and lets you jump between them in one click.
+- **UI language stays global** — the interface language (buttons, labels, navigation) is one setting shared across every tenant, separate from which tenant/content-language you're currently working in.
+- Backend enforces tenant isolation at the data layer: one master resume per language (not one globally), and every list/create/upload endpoint requires an explicit tenant.
+
+Full technical write-up: [`docs/plans/language-tenant-dashboards.md`](docs/plans/language-tenant-dashboards.md).
 
 ## Getting Started
 
@@ -46,60 +62,11 @@ Resume Matcher works by creating a master resume that you can use to tailor for 
 5. **Customize** the layout and sections to fit your style
 6. **Export** as a professional PDF with your preferred template
 
-### Stay Connected
-
-[![Discord](assets/resume_matcher_discord.png)](https://dsc.gg/resume-matcher)
-
-Join our [Discord](https://dsc.gg/resume-matcher) for discussions, feature requests, and community support.
-
-[![LinkedIn](assets/resume_matcher_linkedin.png)](https://www.linkedin.com/company/resume-matcher/)
-
-Follow us on [LinkedIn](https://www.linkedin.com/company/resume-matcher/) for updates.
+Every step above happens inside whichever language tenant you're currently in — see [What's New in This Fork](#whats-new-in-this-fork).
 
 ![Star Resume Matcher](assets/star_resume_matcher.png)
 
-Star the repo to support development and get notified of new releases.
-
-## Sponsors
-
-![sponsors](assets/sponsors.png)
-
-We are grateful to our sponsors who help keep this project going. If you find Resume Matcher helpful, please consider [**sponsoring us**](https://github.com/sponsors/srbhr) to ensure continued development and improvements.
-
-| Sponsor | Description |
-|---------|-------------|
-| [Apideck](https://apideck.com?utm_source=resumematcher&utm_medium=github&utm_campaign=sponsors) | One API to connect your app to 200+ SaaS platforms (accounting, HRIS, CRM, file storage). Build integrations once, not 50 times. 🌐 [apideck.com](https://apideck.com?utm_source=resumematcher&utm_medium=github&utm_campaign=sponsors) |
-| [Vercel](https://vercel.com?utm_source=resumematcher&utm_medium=github&utm_campaign=sponsors) | Resume Matcher is a part of Vercel OSS // Summer 2025 Program 🌐 [vercel.com](https://vercel.com?utm_source=resumematcher&utm_medium=github&utm_campaign=sponsors) |
-| [Cubic.dev](https://cubic.dev?utm_source=resumematcher&utm_medium=github&utm_campaign=sponsors) | Cubic provides PR reviews for Resume Matcher 🌐 [cubic.dev](https://cubic.dev?utm_source=resumematcher&utm_medium=github&utm_campaign=sponsors) |
-| [Kilo Code](https://kilo.ai?utm_source=resumematcher&utm_medium=github&utm_campaign=sponsors) | Kilo Code provides AI code reviews and coding credits to Resume Matcher 🌐 [kilo.ai](https://kilo.ai?utm_source=resumematcher&utm_medium=github&utm_campaign=sponsors) |
-| [ZanReal](https://zanreal.com/?utm_source=resumematcher&utm_medium=github&utm_campaign=sponsors) | ZanReal is an AI-driven development company building scalable cloud solutions, from strategy and UX to DevOps, helping teams ship faster and turn ideas into production. 🌐 [zanreal.com](https://zanreal.com/?utm_source=resumematcher&utm_medium=github&utm_campaign=sponsors) |
-
-<a id="support-the-development-by-donating"></a>
-
-## Sponsor Resume Matcher
-
-![donate](assets/supporting_resume_matcher.png)
-
-Please read our [Sponsorship Guide]([docs/agent/80-sponsorship/sponsorship-guide.md](https://resumematcher.fyi/docs/sponsoring)) for details on how your sponsorship helps the project. You will receive a special thank you in the ReadME and on our website.
-
-| Platform  | Link                                   |
-|-----------|----------------------------------------|
-| GitHub    | [![GitHub Sponsors](https://img.shields.io/github/sponsors/srbhr?style=for-the-badge&color=1d4ed8&labelColor=F0F0E8&logo=github&logoColor=black)](https://github.com/sponsors/srbhr) |
-| Buy Me a Coffee | [![BuyMeACoffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&color=1d4ed8&labelColor=F0F0E8&logoColor=black)](https://www.buymeacoffee.com/srbhr) |
-
-## Creators' Note
-
-[![srbhr](assets/creators_note.png)](https://srbhr.com)
-
-Thank you for checking out Resume Matcher. If you want to connect, collaborate, or just say hi, feel free to reach out!
-~ **Saurabh Rai** ✨
-
-You can follow me on:
-
-- Website: [https://srbhr.com](https://srbhr.com)
-- Linkedin: [https://www.linkedin.com/in/srbhr/](https://www.linkedin.com/in/srbhr/)
-- Twitter: [https://twitter.com/srbhrai](https://twitter.com/srbhrai)
-- GitHub: [https://github.com/srbhr](https://github.com/srbhr)
+Star [this repo](https://github.com/icemc/Resume-Matcher) to support the fork and get notified of new releases.
 
 ## Key Features
 
@@ -136,6 +103,10 @@ Analyze your resume against the job description with a match score, keyword high
 
 ![Resume Scoring and Keyword Highlight](assets/keyword_highlighter.png)
 
+### Application Tracker
+
+A 7-column Kanban board (Saved → Applied → No Response → Response → Interview → Accepted → Rejected) for tracking every application, scoped to its language tenant.
+
 ### PDF Export
 
 Export your tailored resume and cover letter in PDF.
@@ -151,12 +122,12 @@ Export your tailored resume and cover letter in PDF.
 
 ### Internationalization
 
-- **Multi-Language UI**: Interface available in English, Spanish, Chinese, Japanese, and Portuguese (Brazilian)
-- **Multi-Language Content**: Generate resumes and cover letters in your preferred language
+- **Multi-Language UI**: Interface available in English, Spanish, Chinese, Japanese, Portuguese (Brazilian), and French — one global setting shared across every tenant.
+- **Multi-Language Content, Per Tenant**: Each language tenant generates resumes and cover letters in its own language — see [What's New in This Fork](#whats-new-in-this-fork).
 
 ### Roadmap
 
-If you have any suggestions or feature requests, please feel free to open an issue on GitHub or discuss it on our [Discord](https://dsc.gg/resume-matcher) server.
+If you have any suggestions or feature requests for this fork, please [open an issue](https://github.com/icemc/Resume-Matcher/issues).
 
 - AI Canvas for crafting impactful, metric-driven resume content
 - Email template generator for job applications
@@ -168,7 +139,7 @@ If you have any suggestions or feature requests, please feel free to open an iss
 
 ![Installation](assets/how_to_install_resumematcher.png)
 
-For detailed setup instructions, see **[SETUP.md](SETUP.md)** (English) or: [Español](SETUP.es.md), [简体中文](SETUP.zh-CN.md), [日本語](SETUP.ja.md).
+For detailed setup instructions, see **[SETUP.md](SETUP.md)**.
 
 ### Prerequisites
 
@@ -184,7 +155,7 @@ Fastest for MacOS, WSL and Ubuntu users:
 
 ```bash
 # Clone the repository
-git clone https://github.com/srbhr/Resume-Matcher.git
+git clone https://github.com/icemc/Resume-Matcher.git
 cd Resume-Matcher
 
 # Backend (Terminal 1)
@@ -211,13 +182,14 @@ Open **<http://localhost:3000>** and configure your AI provider in Settings.
 | **Google Gemini** | Cloud | Gemini 3 Flash |
 | **OpenRouter** | Cloud | Access to multiple models |
 | **DeepSeek** | Cloud | DeepSeek Chat |
+| **OpenAI-Compatible** | Local/Cloud | Any server exposing the OpenAI Chat Completions API (llama.cpp, vLLM, LM Studio, NVIDIA NIM, ...) |
 
 ### Docker Deployment
 
-Official Docker images are published for `linux/amd64` and `linux/arm64` on:
+This fork's images are published for `linux/amd64` and `linux/arm64` on:
 
-- `ghcr.io/srbhr/resume-matcher`
-- `srbhr/resume-matcher`
+- `ghcr.io/icemc/resume-matcher`
+- `abanda/resume-matcher`
 
 Run on a single public port (`3000`) with API available at `/api`:
 
@@ -225,11 +197,10 @@ Run on a single public port (`3000`) with API available at `/api`:
 docker run --name resume-matcher \
   -p 3000:3000 \
   -v resume-data:/app/backend/data \
-  ghcr.io/srbhr/resume-matcher:latest
+  abanda/resume-matcher:latest
 ```
 
-Prefer pinning a version in production, for example `ghcr.io/srbhr/resume-matcher:1.2.0` or
-`ghcr.io/srbhr/resume-matcher:1.2`.
+Prefer pinning a version in production, for example `abanda/resume-matcher:v1.2.1-RC1`.
 
 Endpoints:
 
@@ -245,7 +216,7 @@ Endpoints:
 |-----------|------------|
 | Backend | FastAPI, Python 3.13+, LiteLLM |
 | Frontend | Next.js 16, React 19, TypeScript |
-| Database | TinyDB (JSON file storage) |
+| Database | SQLite (SQLAlchemy 2.0 async / aiosqlite) |
 | Styling | Tailwind CSS 4, Swiss International Style |
 | PDF | Headless Chromium via Playwright |
 
@@ -253,18 +224,16 @@ Endpoints:
 
 ![how to contribute](assets/how_to_contribute.png)
 
-We welcome contributions from everyone! Whether you're a developer, designer, or just someone who wants to help out. All the contributors are listed in the [about page](https://resumematcher.fyi/about) on our website and on the GitHub Readme here.
+We welcome contributions to this fork! Whether you're a developer, designer, or just someone who wants to help out — open an issue or pull request on [this repository](https://github.com/icemc/Resume-Matcher).
 
-Check out the roadmap if you would like to work on the features that are planned for the future. If you have any suggestions or feature requests, please feel free to open an issue on GitHub and discuss it on our [Discord](https://dsc.gg/resume-matcher) server.
+Check out the roadmap above if you'd like to work on planned features. See [`.github/CONTRIBUTING.md`](.github/CONTRIBUTING.md) for the contribution guide.
 
 <a id="contributors"></a>
 
 ## Contributors
 
-![Contributors](assets/contributors.png)
-
-<a href="https://github.com/srbhr/Resume-Matcher/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=srbhr/Resume-Matcher" />
+<a href="https://github.com/icemc/Resume-Matcher/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=icemc/Resume-Matcher" />
 </a>
 
 <br/>
@@ -272,11 +241,46 @@ Check out the roadmap if you would like to work on the features that are planned
 <details>
   <summary><kbd>Star History</kbd></summary>
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=srbhr/resume-matcher&theme=dark&type=Date">
-    <img width="100%" src="https://api.star-history.com/svg?repos=srbhr/resume-matcher&theme=dark&type=Date">
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=icemc/resume-matcher&theme=dark&type=Date">
+    <img width="100%" src="https://api.star-history.com/svg?repos=icemc/resume-matcher&theme=dark&type=Date">
   </picture>
 </details>
 
-## Resume Matcher is a part of [Vercel Open Source Program](https://vercel.com/oss)
+<a id="original-project--attribution"></a>
 
-![Vercel OSS Program](https://vercel.com/oss/program-badge.svg)
+## Original Project & Attribution
+
+This repository is a fork of **[Resume Matcher](https://github.com/srbhr/Resume-Matcher)**, created and maintained by **Saurabh Rai** ([@srbhr](https://github.com/srbhr)) and its contributors. All of the core product — resume parsing, AI tailoring, the builder, cover letters, scoring, and templates — is their work. This fork builds the multi-tenant language architecture on top of it; everything else described above belongs to the original project.
+
+We don't have our own website, Discord, or social presence yet, so for all of the following, please go to the **original project**:
+
+| | |
+|---|---|
+| 🌐 Website & live preview | [resumematcher.fyi](https://resumematcher.fyi) |
+| 💬 Discord community | [dsc.gg/resume-matcher](https://dsc.gg/resume-matcher) |
+| 🐦 Twitter/X | [@srbhrai](https://twitter.com/srbhrai) |
+| 💼 LinkedIn | [Resume Matcher](https://www.linkedin.com/company/resume-matcher/) |
+| 👤 Creator | [srbhr.com](https://srbhr.com) |
+
+### Sponsorship
+
+**Please direct any sponsorship to the original creators — not this fork.** They designed and built the product this fork extends, and they're the ones who should benefit from your support:
+
+| Platform  | Link                                   |
+|-----------|----------------------------------------|
+| GitHub Sponsors | [github.com/sponsors/srbhr](https://github.com/sponsors/srbhr) |
+| Buy Me a Coffee | [buymeacoffee.com/srbhr](https://www.buymeacoffee.com/srbhr) |
+
+This fork does not solicit or accept its own sponsorships.
+
+### From the Original Creator
+
+[![srbhr](assets/creators_note.png)](https://srbhr.com)
+
+> Thank you for checking out Resume Matcher. If you want to connect, collaborate, or just say hi, feel free to reach out!
+> ~ **Saurabh Rai** ✨
+
+- Website: [https://srbhr.com](https://srbhr.com)
+- Linkedin: [https://www.linkedin.com/in/srbhr/](https://www.linkedin.com/in/srbhr/)
+- Twitter: [https://twitter.com/srbhrai](https://twitter.com/srbhrai)
+- GitHub: [https://github.com/srbhr](https://github.com/srbhr)

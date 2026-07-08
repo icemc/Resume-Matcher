@@ -61,7 +61,7 @@ If you're familiar with development tools and want to get running quickly:
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/srbhr/Resume-Matcher.git
+git clone https://github.com/icemc/Resume-Matcher.git
 cd Resume-Matcher
 
 # 2. Start the backend (Terminal 1)
@@ -89,7 +89,7 @@ Open your browser to **<http://localhost:3000>** and you're ready to go!
 First, get the code on your machine:
 
 ```bash
-git clone https://github.com/srbhr/Resume-Matcher.git
+git clone https://github.com/icemc/Resume-Matcher.git
 cd Resume-Matcher
 ```
 
@@ -431,7 +431,7 @@ npm run dev -- -p 3001
 
 ### Database Management
 
-Resume Matcher uses TinyDB (JSON file storage). All data is in `apps/backend/data/`:
+Resume Matcher uses SQLite (via SQLAlchemy 2.0 async). All data is in `apps/backend/data/`:
 
 ```bash
 # View database files
@@ -517,7 +517,7 @@ Resume-Matcher/
 │   │   ├── app/
 │   │   │   ├── main.py          # Application entry point
 │   │   │   ├── config.py        # Environment configuration
-│   │   │   ├── database.py      # TinyDB wrapper
+│   │   │   ├── database.py      # SQLite (SQLAlchemy async) facade
 │   │   │   ├── llm.py           # AI provider integration
 │   │   │   ├── routers/         # API endpoints
 │   │   │   ├── services/        # Business logic
@@ -546,8 +546,8 @@ Resume-Matcher/
 
 Stuck? Here are your options:
 
-- **Discord Community:** [dsc.gg/resume-matcher](https://dsc.gg/resume-matcher) - Active community for questions and discussions
-- **GitHub Issues:** [Open an issue](https://github.com/srbhr/Resume-Matcher/issues) for bugs or feature requests
+- **GitHub Issues (this fork):** [Open an issue](https://github.com/icemc/Resume-Matcher/issues) for bugs or feature requests specific to this fork
+- **Discord Community (original project):** [dsc.gg/resume-matcher](https://dsc.gg/resume-matcher) - active community for general Resume Matcher questions and discussions
 - **Documentation:** Check the [docs/agent/](docs/agent/) folder for detailed guides
 
 ### Useful Documentation
@@ -560,4 +560,4 @@ Stuck? Here are your options:
 
 ---
 
-Happy resume building! If you find Resume Matcher helpful, consider [starring the repo](https://github.com/srbhr/Resume-Matcher) and [joining our Discord](https://dsc.gg/resume-matcher).
+Happy resume building! If you find this fork helpful, consider [starring the repo](https://github.com/icemc/Resume-Matcher). If you find Resume Matcher itself helpful, consider [joining the original project's Discord](https://dsc.gg/resume-matcher) too.

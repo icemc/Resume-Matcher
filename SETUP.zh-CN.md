@@ -63,7 +63,7 @@ pip install uv
 
 ```bash
 # 1. 克隆仓库
-git clone https://github.com/srbhr/Resume-Matcher.git
+git clone https://github.com/icemc/Resume-Matcher.git
 cd Resume-Matcher
 
 # 2. 启动后端（终端 1）
@@ -93,7 +93,7 @@ npm run dev                  # 启动开发服务器
 先把代码拉到本机：
 
 ```bash
-git clone https://github.com/srbhr/Resume-Matcher.git
+git clone https://github.com/icemc/Resume-Matcher.git
 cd Resume-Matcher
 ```
 
@@ -371,7 +371,7 @@ npm run dev -- -p 3001
 
 ### 数据库管理
 
-Resume Matcher 使用 TinyDB（JSON 文件存储）。数据位于 `apps/backend/data/`：
+Resume Matcher 使用 SQLite（通过 SQLAlchemy 2.0 async）。数据位于 `apps/backend/data/`：
 
 ```bash
 # 查看数据库文件
@@ -459,7 +459,7 @@ Resume-Matcher/
 │  │  ├─ app/
 │  │  │  ├─ main.py            # Application entry point
 │  │  │  ├─ config.py          # Environment configuration
-│  │  │  ├─ database.py        # TinyDB wrapper
+│  │  │  ├─ database.py        # SQLite（SQLAlchemy async）facade
 │  │  │  ├─ llm.py             # AI provider integration
 │  │  │  ├─ routers/           # API endpoints
 │  │  │  ├─ services/          # Business logic
@@ -487,8 +487,8 @@ Resume-Matcher/
 
 如果遇到问题，可以从以下渠道获得支持：
 
-- **Discord 社区：** [dsc.gg/resume-matcher](https://dsc.gg/resume-matcher) - 提问与讨论都很活跃
-- **GitHub Issues：** [提交 Issue](https://github.com/srbhr/Resume-Matcher/issues) 反馈 bug 或提出需求
+- **GitHub Issues（本 fork）：** [提交 Issue](https://github.com/icemc/Resume-Matcher/issues) 反馈本 fork 相关的 bug 或提出需求
+- **Discord 社区（原始项目）：** [dsc.gg/resume-matcher](https://dsc.gg/resume-matcher) - 关于 Resume Matcher 的常规提问与讨论都很活跃
 - **项目文档：** 查看 [docs/agent/](docs/agent/) 获取更详细的指南
 
 ### 推荐文档
@@ -501,5 +501,5 @@ Resume-Matcher/
 
 ---
 
-祝你简历制作顺利！如果 Resume Matcher 对你有帮助，欢迎 [给仓库点个 Star](https://github.com/srbhr/Resume-Matcher)，以及 [加入我们的 Discord](https://dsc.gg/resume-matcher)。
+祝你简历制作顺利！如果这个 fork 对你有帮助，欢迎 [给仓库点个 Star](https://github.com/icemc/Resume-Matcher)。如果 Resume Matcher 本身对你有帮助，也欢迎 [加入原始项目的 Discord](https://dsc.gg/resume-matcher)。
 

@@ -1,6 +1,6 @@
 # Contributing to Resume-Matcher on GitHub
 
-Thank you for taking the time to contribute to [Resume-Matcher](https://github.com/srbhr/Resume-Matcher).
+Thank you for taking the time to contribute to this fork of [Resume-Matcher](https://github.com/icemc/Resume-Matcher). The core product was built by [Saurabh Rai](https://github.com/srbhr) and the [original Resume Matcher](https://github.com/srbhr/Resume-Matcher) project — this fork adds a multi-tenant, language-as-tenant architecture on top of it. See the README's [Original Project & Attribution](../README.md#original-project--attribution) section for details.
 
 We want you to have a great experience making your first contribution.
 
@@ -42,7 +42,7 @@ Follow these steps to set up the environment and run the application.
 
 ## How to install
 
-1. Fork the repository [here](https://github.com/srbhr/Resume-Matcher/fork).
+1. Fork the repository [here](https://github.com/icemc/Resume-Matcher/fork).
 
 2. Clone the forked repository.
 
@@ -198,10 +198,8 @@ Pull Requests & Issues are not just welcomed, they're celebrated! Let's create t
 
 💡 Spot a problem? Create an issue!
 
-👩‍💻 Dive in and help resolve existing [issues](https://github.com/srbhr/Resume-Matcher/issues).
+👩‍💻 Dive in and help resolve existing [issues](https://github.com/icemc/Resume-Matcher/issues).
 
-🔔 Share your thoughts in our [Discussions & Announcements](https://github.com/srbhr/Resume-Matcher/discussions).
+🔔 Share your thoughts in our [Discussions & Announcements](https://github.com/icemc/Resume-Matcher/discussions).
 
-🚀 Explore and improve our [Landing Page](https://github.com/srbhr/website-for-resume-matcher). PRs always welcome!
-
-📚 Contribute to the [Resume Matcher Docs](https://github.com/srbhr/Resume-Matcher-Docs) and help people get started with using the software.
+🌱 Want to contribute to the core Resume Matcher product instead (landing page, official docs, etc.)? Head over to the [original project](https://github.com/srbhr/Resume-Matcher) — see the README's [Original Project & Attribution](../README.md#original-project--attribution) section.

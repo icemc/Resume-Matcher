@@ -63,7 +63,7 @@ Si ya estás familiarizado con herramientas de desarrollo y quieres arrancar rá
 
 ```bash
 # 1. Clona el repositorio
-git clone https://github.com/srbhr/Resume-Matcher.git
+git clone https://github.com/icemc/Resume-Matcher.git
 cd Resume-Matcher
 
 # 2. Inicia el backend (Terminal 1)
@@ -93,7 +93,7 @@ Abre **<http://localhost:3000>** en el navegador y listo.
 Primero, trae el código a tu máquina:
 
 ```bash
-git clone https://github.com/srbhr/Resume-Matcher.git
+git clone https://github.com/icemc/Resume-Matcher.git
 cd Resume-Matcher
 ```
 
@@ -371,7 +371,7 @@ npm run dev -- -p 3001
 
 ### Gestión de base de datos
 
-Resume Matcher usa TinyDB (almacenamiento en archivos JSON). Todos los datos están en `apps/backend/data/`:
+Resume Matcher usa SQLite (vía SQLAlchemy 2.0 async). Todos los datos están en `apps/backend/data/`:
 
 ```bash
 # Ver archivos de la base de datos
@@ -459,7 +459,7 @@ Resume-Matcher/
 │  │  ├─ app/
 │  │  │  ├─ main.py            # Application entry point
 │  │  │  ├─ config.py          # Environment configuration
-│  │  │  ├─ database.py        # TinyDB wrapper
+│  │  │  ├─ database.py        # Facade de SQLite (SQLAlchemy async)
 │  │  │  ├─ llm.py             # AI provider integration
 │  │  │  ├─ routers/           # API endpoints
 │  │  │  ├─ services/          # Business logic
@@ -487,8 +487,8 @@ Resume-Matcher/
 
 ¿Atascado? Estas son tus opciones:
 
-- **Comunidad de Discord:** [dsc.gg/resume-matcher](https://dsc.gg/resume-matcher) - Comunidad activa para preguntas y discusiones
-- **Issues de GitHub:** [Abrir un issue](https://github.com/srbhr/Resume-Matcher/issues) para bugs o solicitudes de funcionalidades
+- **Issues de GitHub (este fork):** [Abrir un issue](https://github.com/icemc/Resume-Matcher/issues) para bugs o solicitudes de funcionalidades específicas de este fork
+- **Comunidad de Discord (proyecto original):** [dsc.gg/resume-matcher](https://dsc.gg/resume-matcher) - comunidad activa para preguntas generales sobre Resume Matcher
 - **Documentación:** revisa la carpeta [docs/agent/](docs/agent/) para guías detalladas
 
 ### Documentación útil
@@ -501,5 +501,5 @@ Resume-Matcher/
 
 ---
 
-¡Feliz creación de currículums! Si Resume Matcher te resulta útil, considera [darle una estrella al repo](https://github.com/srbhr/Resume-Matcher) y [unirte a nuestro Discord](https://dsc.gg/resume-matcher).
+¡Feliz creación de currículums! Si este fork te resulta útil, considera [darle una estrella al repo](https://github.com/icemc/Resume-Matcher). Si Resume Matcher en general te resulta útil, considera también [unirte al Discord del proyecto original](https://dsc.gg/resume-matcher).
 
